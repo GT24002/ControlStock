@@ -8,5 +8,5 @@
 | Rafael Armando Ibañez Diego | ID24001 |
 | Yohalmo Alonso Castro Siguenza | CS24009 |
 | Brayan Alexander Villalta Gutierrez| VG24003 |
-|                           |         |
+| Mynor ivan carias Martinez |CM23138|
 ```

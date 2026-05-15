@@ -1,0 +1,34 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: whitesmoke;
+    font-family:'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+}
+
+.headLine {
+    color: whitesmoke;
+    background: darkslategrey;
+    text-align: center;
+}
+
+.opLabel {
+    background: midnightblue;
+    color: whitesmoke;
+}
+
+.opLabel,
+.tableList,
+.dataInput {
+    padding-left: 5%;
+}
+
+@media screen and (min-width: 480px) {
+    .headLine{
+        text-align: left;
+        padding-left: 10%;
+    }
+}

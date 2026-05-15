@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control Stock</title>
+    <link rel="stylesheet" href="../styles/style.css">
+</head>
+<body>
+    <div class="headLine">
+        <h1>CONTROL STOCK</h1>
+    </div>
+
+    <div class="container">
+        <!-- Listado de datos (GET) -->
+        <div class="operation">
+            <h2 class="opLabel">Listado de datos</h3>
+            <table class="tableList">
+                <tr>
+                    <th>ID</th>
+                    <th>Nombre</th>
+                    <th>Descripción</th>
+                </tr>
+                <!-- Cada tr es una fila y cada td es una columna -->
+                <tr>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+            </table>
+        </div>
+    
+        <!-- Formulario de creación de registro (POST) -->
+        <div class="operation">
+            <h2 class="opLabel">Registrar</h3>
+            <form class="dataInput">
+                <p><label for="name">Nombre: </label></p>
+                <p><input type="text" id="name" placeholder="Nombre"></p>
+                <p><label for="description">Descripción</label></p>
+                <p><textarea id="description"></textarea></p>
+                <p><button>Registrar</button></p>
+            </form>
+        </div>
+    
+        <!-- Formulario de edición (PUT) -->
+        <div class="operation">
+            <h2 class="opLabel">Edición</h3>
+            <form class="dataInput">
+                <p><label for="seach">ID Rol</label></p>
+                <p><input type="number" id="search" placeholder="ID"></p>
+                <p><label for="name">Nuevo Nombre: </label></p>
+                <p><input type="text" id="name" placeholder="Nombre"></p>
+                <p><label for="description">Nueva descripción</label></p>
+                <p><textarea id="description"></textarea></p>
+                <p><button>Acualizar</button></p>
+            </form>
+        </div>
+    
+        <!-- Eliminación (DELETE) -->
+        <div class="operation">
+            <h2 class="opLabel">Eliminar</h3>
+            <p>
+                <label for="seach">ID Rol: </label>
+                <input type="number" id="search" placeholder="ID">
+                <button class="deleteBtn">Eliminar</button>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

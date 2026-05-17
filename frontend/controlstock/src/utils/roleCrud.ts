@@ -41,3 +41,16 @@ export const addRole = (role: Omit<Role, "id">): Role => {
   return newRole;
 };
 
+
+export const getRoleById = (id: number): Role | undefined => {
+  return roles.find((r) => r.id === id);
+};
+
+export const updateRole = (id: number, updated: Omit<Role, "id">): Role | undefined => {
+  const index = roles.findIndex((r) => r.id === id);
+  if (index === -1) return undefined;
+
+  roles[index] = { id, ...updated };
+  saveRoles(roles);
+  return roles[index];
+};

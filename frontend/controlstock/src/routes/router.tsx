@@ -4,6 +4,7 @@ import App from "./../App.tsx";
 
 const Dashboard = lazy(() => import("./../pages/dashboard/Dashboard.tsx"));
 const Roles = lazy(() => import("./../pages/roles/Roles.tsx"));
+const RolesAdd = lazy(() => import("./../pages/roles/RolesAdd.tsx"));
 
 const LazyLoad = ({ children }: { children: React.ReactNode }) => (
   <Suspense
@@ -39,6 +40,14 @@ export const router = createBrowserRouter([
         element: (
           <LazyLoad>
             <Roles />
+          </LazyLoad>
+        ),
+      },
+      {
+        path: "roles/agregar",
+        element: (
+          <LazyLoad>
+            <RolesAdd />
           </LazyLoad>
         ),
       },

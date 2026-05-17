@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Outlet } from "react-router-dom";
-import NavbarHeader from "./app/shared/components/NavbarHeader";
-import Sidebar from "./app/shared/components/Sidebar";
+import NavbarHeader from "./shared/components/NavbarHeader";
+import Sidebar from "./shared/components/Sidebar";
 import "./App.css";
 
 function App() {

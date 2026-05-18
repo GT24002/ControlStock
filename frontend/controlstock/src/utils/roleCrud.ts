@@ -54,3 +54,12 @@ export const updateRole = (id: number, updated: Omit<Role, "id">): Role | undefi
   saveRoles(roles);
   return roles[index];
 };
+
+export const deleteRole = (id: number): boolean => {
+  const index = roles.findIndex((r) => r.id === id);
+  if (index === -1) return false;
+
+  roles.splice(index, 1);
+  saveRoles(roles);
+  return true;
+};

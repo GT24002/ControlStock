@@ -1,0 +1,18 @@
+# Ignorar dependencias locales (se instalan de forma nativa en el contenedor en STAGE 1)
+node_modules/
+npm-debug.log
+
+# Ignorar compilaciones locales
+dist/
+build/
+.vite/
+
+# Ignorar control de versiones y configuraciones de editores
+.git/
+.gitignore
+.gitattributes
+.vscode/
+.idea/
+
+# Ignorar documentación local que no se necesita para la web
+README.md

@@ -74,20 +74,20 @@ ControlStock/
 
 ```bash
 # ─── Único comando necesario ───
-docker compose up -d db
+docker compose -p controlstock-dev up db-dev -d
 ```
 
 **¿Qué hace?**
 1. Descarga la imagen de PostgreSQL 16.13 (solo la primera vez)
 2. Crea la base de datos `controlstock` con usuario `admin`/`admin123`
 3. Ejecuta los scripts SQL de `database/` para crear tablas y datos iniciales
-4. PostgreSQL queda disponible en `localhost:5432`
+4. PostgreSQL queda disponible en `localhost:5433`
 
 **Verificar que funciona:**
 ```bash
-docker compose ps
+docker compose -p controlstock-dev ps
 # Name                    Status
-# controlstock-db         Up (healthy)
+# controlstock-db-dev     Up (healthy)
 ```
 
 ---
@@ -108,7 +108,7 @@ Las credenciales en `application.properties` ya apuntan a PostgreSQL en Docker p
 
 | Campo | Valor |
 |-------|-------|
-| Main class | `com.example.demo.DemoApplication` (o la de tu proyecto) |
+| Main class | `com.ues.controlstock.ControlstockApplication` |
 | Module | `controlstock` |
 | Active Profiles | `local` (opcional) |
 | Working directory | `ControlStock/backend/controlstock` |
@@ -118,8 +118,8 @@ Las credenciales en `application.properties` ya apuntan a PostgreSQL en Docker p
 
 > [!NOTE]
 > **💡 Entendiendo las dos configuraciones del Backend:**
-> * **`application.properties` (Base / Docker):** Contiene la configuración global. Cuando ejecutas en **Modo Todo-en-Docker**, el contenedor del backend no puede acceder a la base de datos usando `localhost`. Por ello, `docker-compose.yml` sobrescribe dinámicamente las propiedades usando variables de entorno para apuntar al servicio **`db:5432`**.
-> * **`application-local.properties` (Perfil `local` / IDE):** Se activa al pasar el perfil `local` en tu IDE. Está diseñado para el **Modo Híbrido**, permitiendo que tu backend (corriendo fuera de Docker) acceda a la base de datos expuesta en **`localhost:5432`** y activando automáticamente **Spring DevTools** para la recarga rápida de clases en desarrollo.
+> * **`application.properties` (Base / Docker):** Contiene la configuración global. Cuando ejecutas en **Modo Todo-en-Docker**, el contenedor del backend no puede acceder a la base de datos usando `localhost`. Por ello, `docker-compose.yml` sobrescribe dinámicamente las propiedades usando variables de entorno para apuntar al servicio **`db-dev:5433`**.
+> * **`application-local.properties` (Perfil `local` / IDE):** Se activa al pasar el perfil `local` en tu IDE. Está diseñado para el **Modo Híbrido**, permitiendo que tu backend (corriendo fuera de Docker) acceda a la base de datos expuesta en **`localhost:5433`** y activando automáticamente **Spring DevTools** para la recarga rápida de clases en desarrollo.
 
 ### 3.3 Habilitar compilación automática (Hot Reload)
 ```
@@ -169,20 +169,6 @@ npm run dev
 
 Abre [http://localhost:5173](http://localhost:5173) en tu navegador.
 
-### 4.4 (Opcional) Abrir en VSCode
-```bash
-code frontend/controlstock
-```
-
-Extensiones recomendadas:
-| Extensión | ID |
-|-----------|-----|
-| ES7+ React/Redux snippets | `dsznajder.es7-react-js-snippets` |
-| Tailwind CSS IntelliSense | `bradlc.vscode-tailwindcss` |
-| Prettier | `esbenp.prettier-vscode` |
-
----
-
 ## ✅ Resumen del Modo Híbrido
 
 ```
@@ -201,15 +187,15 @@ Extensiones recomendadas:
 │         ┌──────▼───────┐                          │
 │         │   Docker     │                          │
 │         │ PostgreSQL   │                          │
-│         │  localhost:5432                         │
+│         │  localhost:5433                         │
 │         └──────────────┘                          │
 └──────────────────────────────────────────────────┘
 
 Comandos:
-  docker compose up -d db         ← Inicia BD
-  [IntelliJ] ▶️ Run               ← Inicia Backend
-  npm run dev                     ← Inicia Frontend
-  docker compose down             ← Detiene BD
+  docker compose -p controlstock-dev up db-dev -d  ← Inicia BD
+  [IntelliJ] ▶️ Run                                 ← Inicia Backend
+  npm run dev                                       ← Inicia Frontend
+  docker compose -p controlstock-dev down           ← Detiene BD
 ```
 
 ---
@@ -220,10 +206,10 @@ Comandos:
 > *Un solo comando levanta todo.*
 
 ```bash
-docker compose --profile full up --build
+docker compose -p controlstock-dev --profile dev up --build
 ```
 
-Este modo activa los servicios `backend` y `frontend` únicamente cuando se usa el perfil `full`.  
+Este modo activa los servicios `backend-dev`, `frontend-dev` y `db-dev` del perfil `dev`.  
 Sin el perfil, `docker compose up` solo levanta PostgreSQL.
 
 **Documentación completa del modo Docker**: [docker-dev-setup.md](./docker-dev-setup.md)
@@ -232,15 +218,14 @@ Sin el perfil, `docker compose up` solo levanta PostgreSQL.
 
 # 🔧 Flujo de Trabajo Diario
 
-### "Voy a empezar a trabajar"
+
 ```bash
 cd ControlStock
 
-# 1. Traer cambios
-git pull
+# 1. Traer cambios, actualizar tu rama con los cambios de main
 
 # 2. Iniciar PostgreSQL (si no está corriendo)
-docker compose up -d db
+docker compose -p controlstock-dev up db-dev -d
 
 # 3. Backend → IntelliJ ▶️
 # 4. Frontend → npm run dev
@@ -248,14 +233,14 @@ docker compose up -d db
 
 ### "Necesito ver logs de PostgreSQL"
 ```bash
-docker compose logs -f db
+docker compose -p controlstock-dev logs -f db-dev
 ```
 
 ### "Necesito resetear la base de datos"
 ```bash
 # ⚠️ Borra TODOS los datos
-docker compose down -v
-docker compose up -d db
+docker compose -p controlstock-dev down -v
+docker compose -p controlstock-dev up db-dev -d
 ```
 
 ### "Necesito instalar una dependencia npm"
@@ -275,13 +260,13 @@ mvn test
 
 ### "Necesito acceder a la BD directamente"
 ```bash
-docker compose exec db psql -U admin -d controlstock
+docker compose -p controlstock-dev exec db-dev psql -U admin -d controlstock
 ```
 
 ### "Terminé mi jornada"
 ```bash
-# Detener PostgreSQL (conserva datos)
-docker compose down
+# Detener PostgreSQL y conserva datos
+docker compose -p controlstock-dev down
 
 # Para liberar espacio:
 docker system prune
@@ -291,22 +276,18 @@ docker system prune
 
 # ⚠️ Solución de Problemas
 
-### 🔴 "Port 5432 is already in use"
+### 🔴 "Port 5433 is already in use"
 **Causa**: Tienes PostgreSQL instalado localmente.
 ```bash
 # Windows:
 net stop postgresql-x64-16
-
-# O cambia el puerto en docker-compose.yml:
-ports:
-  - "5433:5432"   # ← Cambia solo el puerto del host
 ```
 
 ### 🔴 "Backend no conecta a PostgreSQL"
-1. Verifica que PostgreSQL esté corriendo: `docker compose ps`
-2. Verifica el estado: `docker compose logs db`
-3. Espera el healthcheck: `db` debe mostrar `Up (healthy)`
-4. En IntelliJ, verifica `application.properties` apunta a `localhost:5432`
+1. Verifica que PostgreSQL esté corriendo: `docker compose -p controlstock-dev ps`
+2. Verifica el estado: `docker compose -p controlstock-dev logs db-dev`
+3. Espera el healthcheck: `db-dev` debe mostrar `Up (healthy)`
+4. En IntelliJ, verifica `application.properties` apunta a `localhost:5433`
 
 ### 🔴 "Frontend: npm install falla"
 ```bash
@@ -336,41 +317,7 @@ server: {
 
 # 📊 Comparativa: ¿Qué modo elegir?
 
-| Aspecto | 🌓 Híbrido (recomendado) | 🐳 Todo-en-Docker |
-|---------|--------------------------|-------------------|
-| **Conocimiento necesario** | Básico de Docker (solo `docker compose up -d db`) | Docker avanzado |
-| **Hot Reload Java** | ✅ Nativo en IntelliJ | ✅ DevTools en contenedor |
-| **HMR Frontend** | ✅ Nativo de Vite | ✅ Vite + polling (1s) |
-| **Debugging Java** | ✅ Breakpoints en IntelliJ | ✅ Remote Debug (puerto 5005) |
-| **Rendimiento** | ✅ Nativo | ✅ Excelente |
-| **Aislamiento** | ⚠️ Parcial (BD en Docker) | ✅ Total |
-| **Configuración inicial** | Instalar Node.js + JDK 21 | Solo Docker Desktop |
-
 **Recomendación**: Usa el **Modo Híbrido** para el día a día.  
-El **Modo Todo-en-Docker** es ideal para CI/CD, onboarding de nuevos devs, o cuando quieres un entorno completamente aislado.
+El **Modo Todo-en-Docker** es ideal para practicar CI/CD o, cuando quieres un entorno completamente aislado y asegurar que un despliegue funcione igual que en producción.
 
 ---
-
-# 🎯 Checklist para el Primer Día
-
-### Para cualquier desarrollador (Modo Híbrido):
-- [ ] Tener Docker Desktop instalado y funcionando
-- [ ] Clonar el repositorio: `git clone https://github.com/GT24002/ControlStock.git`
-- [ ] Ejecutar: `docker compose up -d db`
-- [ ] Abrir `backend/controlstock` en IntelliJ
-- [ ] Configurar JDK 21 si es necesario
-- [ ] Ejecutar ▶️ el backend desde IntelliJ
-- [ ] Abrir terminal en `frontend/controlstock`
-- [ ] Ejecutar: `npm install` (solo la primera vez)
-- [ ] Ejecutar: `npm run dev`
-- [ ] Abrir http://localhost:5173 — app funcionando
-- [ ] Abrir http://localhost:8080/swagger-ui.html — API funcionando
-- [ ] Modificar un `.tsx` → guardar → ver cambio en el navegador
-- [ ] Modificar un `.java` → guardar → ver reinicio en consola de IntelliJ
-
-### Extra para Devs que quieran Docker total:
-- [ ] Revisar [docker-dev-setup.md](./docker-dev-setup.md)
-- [ ] Ejecutar: `docker compose --profile full up --build`
-- [ ] Verificar que todo funciona sin ejecutar nada local
-
-**✅ ¡Listo para desarrollar!**

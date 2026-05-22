@@ -1,190 +1,224 @@
 # =============================================================================
-# Docker Compose para ControlStock - ENTORNO DE DESARROLLO
+# Docker Compose para ControlStock (dev / prod)
 # =============================================================================
-# Este archivo define los servicios necesarios para el desarrollo local.
-# Permite dos modalidades de trabajo:
+# Cada perfil agrupa sus servicios bajo un nombre de proyecto distinto
+# mediante el flag -p (project name) de Docker Compose.
 #
-# 1. Modo Hibrido (recomendado):
-#    Solo se levanta el servicio de base de datos en Docker.
-#    El backend se ejecuta localmente (desde el IDE como IntelliJ o Eclipse).
-#    El frontend se ejecuta localmente (usando npm run dev).
-#    Comando para iniciar: docker compose up -d db
+# Comandos de uso:
 #
-# 2. Modo Todo-en-Docker:
-#    Levanta todos los servicios (base de datos, backend y frontend) en Docker.
-#    Utiliza perfiles de compose para activar los servicios de aplicacion.
-#    Comando para iniciar: docker compose --profile full up --build
+# 1. MODO HIBRIDO (solo base de datos de desarrollo en Docker,
+#    backend y frontend se ejecutan localmente):
+#      docker compose -p controlstock-dev up db-dev -d
+#
+# 2. ENTORNO DE DESARROLLO COMPLETO (todo en Docker - perfil "dev"):
+#      docker compose -p controlstock-dev --profile dev up --build
+#
+# 3. ENTORNO DE PRODUCCION (todo en Docker - perfil "prod"):
+#      docker compose -p controlstock-prod --profile prod up --build -d
+#
+# 4. AMBOS ENTORNOS SIMULTANEAMENTE:
+#      docker compose -p controlstock-dev --profile dev up --build -d
+#      docker compose -p controlstock-prod --profile prod up --build -d
 # =============================================================================
-
-name: controlstock-dev
 
 services:
 
-  # ----------------------------------------------------------------------------
-  # Servicio 1: PostgreSQL 16.13 (Base de Datos) - SIEMPRE necesario
-  # ----------------------------------------------------------------------------
-  db:
-    # Imagen oficial de PostgreSQL basada en Alpine Linux para reducir tamano
+  # ===========================================================================
+  # Perfil: dev - Base de Datos de Desarrollo
+  # ===========================================================================
+  db-dev:
+    profiles:
+      - dev
     image: postgres:16.13-alpine3.23
-    # Nombre personalizado del contenedor para desarrollo local
     container_name: controlstock-db-dev
-    # Reinicia el contenedor si falla, a menos que se detenga de forma manual
     restart: unless-stopped
-    # Variables de entorno para inicializar la base de datos de desarrollo
     environment:
-      # Nombre de la base de datos que se creara al arrancar
       POSTGRES_DB: controlstock
-      # Nombre del usuario administrador de la base de datos
       POSTGRES_USER: admin
-      # Contrasena de acceso para el usuario administrador
       POSTGRES_PASSWORD: admin123
     ports:
-      # Mapeo del puerto de la base de datos (host:contenedor)
-      # Permite que el backend ejecutado en local se conecte a PostgreSQL
-      - "5432:5432"
+      - "5433:5432"
     volumes:
-      # Volumen para guardar de forma permanente los datos de la base de datos
       - pgdata_dev:/var/lib/postgresql/data
-      # Scripts SQL para inicializar la estructura y los datos iniciales
-      # Funcionamiento: En el primer arranque, PostgreSQL ejecuta automaticamente los
-      # archivos .sql de ./database en orden alfabetico (1-create_tables.sql, luego
-      # 2-seed_data.sql) para crear tablas e insertar datos de prueba. En arranques
-      # siguientes, al detectar que la base ya existe en pgdata_dev, ignora esta carpeta
-      # para evitar duplicados. Para reiniciar desde cero: docker compose down -v
       - ./database:/docker-entrypoint-initdb.d:ro
     labels:
       - "com.docker.compose.project=controlstock-dev"
       - "environment=development"
-    # Comprobacion de salud para asegurar que la base de datos este lista
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U admin -d controlstock"]
-      # Tiempo entre cada prueba de salud
       interval: 10s
-      # Tiempo limite para esperar la respuesta de la prueba
       timeout: 5s
-      # Numero de fallos permitidos antes de marcar como no saludable
       retries: 5
-      # Tiempo de gracia inicial para permitir el arranque de PostgreSQL
       start_period: 15s
     networks:
-      # Conecta el contenedor a la red virtual de desarrollo
       - controlstock-net-dev
 
-  # ----------------------------------------------------------------------------
-  # Servicio 2: Backend Spring Boot (Java 21) - PERFIL "full"
-  # ----------------------------------------------------------------------------
-  backend:
-    # Pertenece al perfil full (no inicia con el comando simple up por defecto)
+  # ===========================================================================
+  # Perfil: dev - Backend (Spring Boot con DevTools y JDWP)
+  # ===========================================================================
+  backend-dev:
     profiles:
-      - full
+      - dev
     build:
-      # Carpeta donde se encuentra el codigo y el Dockerfile del backend
       context: ./backend/controlstock
-      # Etapa de construccion de desarrollo definida en el Dockerfile
       target: dev
-    # Nombre asignado a la imagen de desarrollo del backend
     image: controlstock-backend-dev:latest
-    # Nombre del contenedor en ejecucion para desarrollo
     container_name: controlstock-backend-dev
     restart: unless-stopped
     ports:
-      # Puerto para acceder a la aplicacion y su API REST (Swagger)
       - "8080:8080"
-      # Puerto para depuracion remota mediante JDWP desde el IDE en el host
       - "5005:5005"
-      # Puerto para el refresco automatico de Spring Boot DevTools
       - "35729:35729"
-    # Variables de entorno del backend para conectarse a la base de datos
     environment:
-      # URL JDBC de conexion apuntando al host db que es el otro contenedor
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/controlstock
-      # Usuario de base de datos de desarrollo
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db-dev:5432/controlstock
       SPRING_DATASOURCE_USERNAME: admin
-      # Contrasena de base de datos de desarrollo
       SPRING_DATASOURCE_PASSWORD: admin123
-      # Actualiza las tablas en base a las entidades JPA de forma automatica
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
-      # Habilita el reinicio de la aplicacion al modificar archivos
       SPRING_DEVTOOLS_RESTART_ENABLED: "true"
-      # Habilita el refresco en caliente del navegador al recargar recursos
       SPRING_DEVTOOLS_LIVERELOAD_ENABLED: "true"
-      # Directorio monitorizado para detectar clases Java compiladas
       SPRING_DEVTOOLS_RESTART_ADDITIONAL_PATHS: /app/target/classes
-      # Opciones Java para habilitar el servidor de depuracion en el puerto 5005
       JAVA_OPTS: -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
     volumes:
-      # Montaje de codigo local para ver reflejados los cambios en caliente
       - ./backend/controlstock:/app
-      # Volumen para guardar dependencias de Maven y no descargarlas en cada build
       - m2-cache-dev:/root/.m2
     labels:
       - "com.docker.compose.project=controlstock-dev"
       - "environment=development"
-    # El backend no iniciara hasta que la base de datos este saludable
     depends_on:
-      db:
+      db-dev:
         condition: service_healthy
     networks:
       - controlstock-net-dev
 
-  # ----------------------------------------------------------------------------
-  # Servicio 3: Frontend React + Vite - PERFIL "full"
-  # ----------------------------------------------------------------------------
-  frontend:
-    # Pertenece al perfil full (no inicia por defecto)
+  # ===========================================================================
+  # Perfil: dev - Frontend (React + Vite con HMR)
+  # ===========================================================================
+  frontend-dev:
     profiles:
-      - full
+      - dev
     build:
-      # Carpeta con el codigo y Dockerfile de React
       context: ./frontend/controlstock
-      # Etapa de desarrollo en el Dockerfile para levantar Vite
       target: dev
-    # Nombre asignado a la imagen de desarrollo del frontend
     image: controlstock-frontend-dev:latest
-    # Nombre del contenedor en ejecucion para desarrollo del frontend
     container_name: controlstock-frontend-dev
     restart: unless-stopped
     ports:
-      # Mapea el puerto de Vite para acceder al frontend desde el navegador
       - "5173:5173"
     environment:
-      # URL del backend al cual el frontend realizara llamadas de API
       VITE_API_URL: http://localhost:8080
-      # Habilita el polling para detectar cambios de archivos en Windows/WSL
       CHOKIDAR_USEPOLLING: 1
-      # Intervalo en milisegundos para verificar cambios en los archivos
       CHOKIDAR_INTERVAL: 1000
     volumes:
-      # Montaje del codigo local del frontend en el contenedor
       - ./frontend/controlstock:/app
-      # Evita que node_modules local del host sobrescriba el del contenedor
       - /app/node_modules
     labels:
       - "com.docker.compose.project=controlstock-dev"
       - "environment=development"
-    # El frontend depende del backend
     depends_on:
-      - backend
+      - backend-dev
     networks:
       - controlstock-net-dev
 
-# ------------------------------------------------------------------------------
-# Red de Desarrollo Aislada
-# ------------------------------------------------------------------------------
+  # ===========================================================================
+  # Perfil: prod - Base de Datos de Produccion
+  # ===========================================================================
+  db-prod:
+    profiles:
+      - prod
+    image: postgres:16.13-alpine3.23
+    container_name: controlstock-db-prod
+    restart: always
+    environment:
+      POSTGRES_DB: controlstock
+      POSTGRES_USER: admin_prod
+      POSTGRES_PASSWORD: admin_production_password
+    ports:
+      - "5434:5432"
+    volumes:
+      - pgdata_prod:/var/lib/postgresql/data
+      - ./database:/docker-entrypoint-initdb.d:ro
+    labels:
+      - "com.docker.compose.project=controlstock-prod"
+      - "environment=production"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin_prod -d controlstock"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - controlstock-net-prod
+
+  # ===========================================================================
+  # Perfil: prod - Backend (Spring Boot optimizado)
+  # ===========================================================================
+  backend-prod:
+    profiles:
+      - prod
+    build:
+      context: ./backend/controlstock
+      target: prod
+    image: controlstock-backend-prod:latest
+    container_name: controlstock-backend-prod
+    restart: always
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db-prod:5432/controlstock
+      SPRING_DATASOURCE_USERNAME: admin_prod
+      SPRING_DATASOURCE_PASSWORD: admin_production_password
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+    expose:
+      - "8080"
+    ports:
+      - "8081:8080"
+    labels:
+      - "com.docker.compose.project=controlstock-prod"
+      - "environment=production"
+    depends_on:
+      db-prod:
+        condition: service_healthy
+    networks:
+      - controlstock-net-prod
+
+  # ===========================================================================
+  # Perfil: prod - Frontend (React + Nginx)
+  # ===========================================================================
+  frontend-prod:
+    profiles:
+      - prod
+    build:
+      context: ./frontend/controlstock
+      target: prod
+    image: controlstock-frontend-prod:latest
+    container_name: controlstock-frontend-prod
+    restart: always
+    ports:
+      - "80:80"
+    labels:
+      - "com.docker.compose.project=controlstock-prod"
+      - "environment=production"
+    depends_on:
+      - backend-prod
+    networks:
+      - controlstock-net-prod
+
+# =============================================================================
+# Redes
+# =============================================================================
 networks:
   controlstock-net-dev:
-    # Nombre de la red en el sistema
     name: controlstock_network_dev
-    # Tipo de driver para conectar los contenedores locales de manera aislada
+    driver: bridge
+  controlstock-net-prod:
+    name: controlstock_network_prod
     driver: bridge
 
-# ------------------------------------------------------------------------------
-# Volumenes de Desarrollo
-# ------------------------------------------------------------------------------
+# =============================================================================
+# Volumenes
+# =============================================================================
 volumes:
-  # Volumen para persistir los datos de PostgreSQL en desarrollo
   pgdata_dev:
     name: controlstock_pgdata_dev
-  # Volumen para guardar dependencias descargadas por Maven en desarrollo
   m2-cache-dev:
     name: controlstock_m2_cache_dev
+  pgdata_prod:
+    name: controlstock_pgdata_prod

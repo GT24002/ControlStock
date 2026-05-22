@@ -36,7 +36,8 @@ El sistema se compone de **tres servicios** interconectados mediante una red Doc
 | Elemento | Configuración |
 |----------|--------------|
 | **Imagen** | `postgres:16.13-alpine3.23` |
-| **Puerto** | `5433:5432` |
+| **Puerto interno** | `5432` (contenedor) |
+| **Puerto expuesto** | `5433` (host) |
 | **Persistencia** | `Named Volume` → `controlstock_pgdata_dev` |
 | **Inicialización** | Bind mount `./database:/docker-entrypoint-initdb.d:ro` |
 | **Healthcheck** | `pg_isready -U admin -d controlstock` cada 10s, 5 reintentos |

@@ -26,7 +26,7 @@ En desarrollo utilizamos herramientas para la comodidad como programadores (rein
              │     ┌───────────────┐          ┌───────────────┐         │
              │     │ Spring Boot   │─────────▶│  PostgreSQL   │         │
              │     │   (Backend)   │          │ (Base Datos)  │         │
-             │     │  Puerto 8080  │          │  Puerto 5433  │         │
+             │     │  Puerto 8080  │          │  Puerto 5432  │         │
              │     └───────────────┘          └───────────────┘         │
              │         (Sin JRE)                 (Volumen Prod)         │
              └──────────────────────────────────────────────────────────┘
@@ -83,7 +83,7 @@ docker compose -p controlstock-prod ps
 ```
 
 Deberías ver tres contenedores activos con el sufijo `-prod`:
-* `controlstock-db-prod` (Puerto 5433 expuesto internamente)
+* `controlstock-db-prod` (Puerto 5432 interno, expuesto como 5434 en el host)
 * `controlstock-backend-prod` (Puerto 8081 expuesto al host)
 * `controlstock-frontend-prod` (Puerto 80 expuesto al host)
 

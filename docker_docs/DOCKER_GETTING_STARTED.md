@@ -118,8 +118,8 @@ Las credenciales en `application.properties` ya apuntan a PostgreSQL en Docker p
 
 > [!NOTE]
 > **💡 Entendiendo las dos configuraciones del Backend:**
-> * **`application.properties` (Base / Docker):** Contiene la configuración global. Cuando ejecutas en **Modo Todo-en-Docker**, el contenedor del backend no puede acceder a la base de datos usando `localhost`. Por ello, `docker-compose.yml` sobrescribe dinámicamente las propiedades usando variables de entorno para apuntar al servicio **`db-dev:5433`**.
-> * **`application-local.properties` (Perfil `local` / IDE):** Se activa al pasar el perfil `local` en tu IDE. Está diseñado para el **Modo Híbrido**, permitiendo que tu backend (corriendo fuera de Docker) acceda a la base de datos expuesta en **`localhost:5433`** y activando automáticamente **Spring DevTools** para la recarga rápida de clases en desarrollo.
+> * **`application.properties` (Base / Híbrido):** Contiene la configuración para el **Modo Híbrido** (backend local + BD en Docker). Apunta a **`localhost:5433`** — el puerto expuesto en el host. Cuando ejecutas en **Modo Todo-en-Docker**, `docker-compose.yml` sobrescribe mediante variables de entorno apuntando al servicio interno **`db-dev:5432`** (puerto del contenedor).
+> * **`application-local.properties` (Perfil `local` / IDE):** Se activa al pasar el perfil `local` en tu IDE. Está diseñado para el **Modo Híbrido**, permitiendo que tu backend (corriendo fuera de Docker) acceda a la base de datos expuesta en **`localhost:5433`** y activando automáticamente **Spring DevTools** para la recarga rápida de clases en desarrollo. Ambas configuraciones (`application.properties` y `application-local.properties`) usan el mismo puerto `5433` del host.
 
 ### 3.3 Habilitar compilación automática (Hot Reload)
 ```

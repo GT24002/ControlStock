@@ -9,13 +9,27 @@ import axios, {
  * Lee la URL base desde VITE_API_BASE_URL (variable de entorno),
  * configura timeout e interceptores para peticiones y respuestas.
  */
+
+const getBaseUrl = (): string => {
+  const baseUrl = import.meta.env.VITE_API_BASE_URL;    
+
+  if (!baseUrl) {
+    console.warn(
+      "VITE_API_BASE_URL no está definido. Usando valor por defecto.",
+    );
+    return "http://localhost:8080/api";
+  }
+
+  return baseUrl;
+}
 const apiClient: AxiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api",
+  baseURL: getBaseUrl(),
   timeout: Number(import.meta.env.VITE_API_TIMEOUT) || 10000,
   headers: {
     "Content-Type": "application/json",
   },
 });
+
 
 /* ------------------------------------------------------------------ */
 /*  Interceptor de petición: agrega token de autenticacion si existe   */

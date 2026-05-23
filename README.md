@@ -20,7 +20,7 @@ Para entender la arquitectura, levantar los entornos y comprender el funcionamie
 <br>Cómo empezar a programar en el día a día. Explica el **Modo Híbrido** (base de datos en Docker y código corriendo localmente en IntelliJ/VSCode Vite) y el **Modo Todo-en-Docker** para levantar el sistema completo con un solo comando.
 
 ### 2. Sustento Técnico de Desarrollo (Docker Dev)
-* **Archivo:** [docker-dev-setup.md](docker_docs/docker-dev-setup.md)
+* **Archivo:** [DOCKER_DEV_GUIDE.md](docker_docs/DOCKER_DEV_GUIDE.md)
 <br>La arquitectura técnica de desarrollo **Modo Todo-en-Docker**. Explica detalladamente cómo se logra el *Hot Reload* en Java y React dentro de contenedores usando *bind mounts*, caché persistente de dependencias y *polling* de archivos para solucionar bloqueos en Windows/WSL.
 
 ### 3. Simulación de Producción y Optimización

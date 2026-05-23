@@ -105,7 +105,6 @@ services:
     ports:
       - "5173:5173"
     environment:
-      VITE_API_URL: http://localhost:8080
       CHOKIDAR_USEPOLLING: 1
       CHOKIDAR_INTERVAL: 1000
     volumes:

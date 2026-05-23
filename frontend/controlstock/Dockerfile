@@ -43,6 +43,9 @@ EXPOSE 5173
 ENV CHOKIDAR_USEPOLLING=1
 ENV CHOKIDAR_INTERVAL=1000
 
+# URL base de la API para el entorno de desarrollo
+ENV VITE_API_BASE_URL=http://localhost:8080/api
+
 # Iniciar Vite en modo desarrollo con --host para aceptar conexiones externas
 # El flag --host 0.0.0.0 es obligatorio para que funcione dentro del contenedor
 ENTRYPOINT ["npx", "vite", "--host", "0.0.0.0", "--port", "5173"]
@@ -59,6 +62,9 @@ COPY --from=deps /app/node_modules ./node_modules
 
 # Copiar todo el codigo fuente
 COPY . .
+
+# URL base de la API para el entorno de produccion
+ENV VITE_API_BASE_URL=http://localhost:8081/api
 
 # Compilar la aplicacion para produccion
 RUN npm run build

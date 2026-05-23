@@ -11,7 +11,7 @@
 #      docker compose -p controlstock-dev up db-dev -d
 #
 # 2. ENTORNO DE DESARROLLO COMPLETO (todo en Docker - perfil "dev"):
-#      docker compose -p controlstock-dev --profile dev up --build
+#      docker compose -p controlstock-dev --profile dev up --build -d
 #
 # 3. ENTORNO DE PRODUCCION (todo en Docker - perfil "prod"):
 #      docker compose -p controlstock-prod --profile prod up --build -d

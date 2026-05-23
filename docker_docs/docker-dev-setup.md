@@ -194,7 +194,8 @@ ControlStock/
 ├── backend/controlstock/
 │   ├── Dockerfile                  ← Multi-stage: builder → dev → prod
 │   ├── pom.xml
-│   └── src/
+│   └── src/main/resources/
+│       └── application.properties  ← Configuracion unica (modo hibrido + Docker)
 │
 ├── frontend/controlstock/
 │   ├── Dockerfile                  ← Multi-stage: deps → dev → build → prod

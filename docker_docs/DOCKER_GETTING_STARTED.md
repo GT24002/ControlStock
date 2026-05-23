@@ -57,8 +57,7 @@ ControlStock/
 │   ├── Dockerfile
 │   ├── pom.xml
 │   └── src/main/resources/
-│       ├── application.properties        ← Base (PostgreSQL en Docker)
-│       └── application-local.properties  ← Perfil "local" (opcional)
+│       └── application.properties
 ├── frontend/controlstock/
 │   ├── Dockerfile
 │   ├── vite.config.ts
@@ -99,8 +98,7 @@ docker compose -p controlstock-dev ps
 File → Open → Seleccionar ControlStock/backend/controlstock/
 ```
 
-### 3.2 (Opcional) Configurar perfil "local"
-Las credenciales en `application.properties` ya apuntan a PostgreSQL en Docker por defecto, pero si prefieres un perfil separado:
+### 3.2 Configurar la ejecucion en IntelliJ
 
 1. `Run → Edit Configurations`
 2. Click `+` → `Application`
@@ -110,16 +108,18 @@ Las credenciales en `application.properties` ya apuntan a PostgreSQL en Docker p
 |-------|-------|
 | Main class | `com.ues.controlstock.ControlstockApplication` |
 | Module | `controlstock` |
-| Active Profiles | `local` (opcional) |
+| Active Profiles | *(dejar vacio — por defecto usa application.properties)* |
 | Working directory | `ControlStock/backend/controlstock` |
 | JDK | `21` (corregir si no aparece) |
 
 4. Click `Apply → OK`
 
 > [!NOTE]
-> **💡 Entendiendo las dos configuraciones del Backend:**
-> * **`application.properties` (Base / Híbrido):** Contiene la configuración para el **Modo Híbrido** (backend local + BD en Docker). Apunta a **`localhost:5433`** — el puerto expuesto en el host. Cuando ejecutas en **Modo Todo-en-Docker**, `docker-compose.yml` sobrescribe mediante variables de entorno apuntando al servicio interno **`db-dev:5432`** (puerto del contenedor).
-> * **`application-local.properties` (Perfil `local` / IDE):** Se activa al pasar el perfil `local` en tu IDE. Está diseñado para el **Modo Híbrido**, permitiendo que tu backend (corriendo fuera de Docker) acceda a la base de datos expuesta en **`localhost:5433`** y activando automáticamente **Spring DevTools** para la recarga rápida de clases en desarrollo. Ambas configuraciones (`application.properties` y `application-local.properties`) usan el mismo puerto `5433` del host.
+> **💡 Un solo archivo de configuracion:**
+> `application.properties` contiene la configuracion completa para el **Modo Híbrido** (backend local + BD en Docker). Apunta a **`localhost:5433`** — el puerto expuesto en el host — e incluye DevTools para recarga rapida.  
+> Cuando ejecutas en **Modo Todo-en-Docker**, `docker-compose.yml` sobrescribe estas propiedades mediante variables de entorno apuntando a los servicios internos:
+>   - **`db-dev:5432`** (perfil dev)
+>   - **`db-prod:5432`** (perfil prod)
 
 ### 3.3 Habilitar compilación automática (Hot Reload)
 ```

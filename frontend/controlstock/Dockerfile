@@ -19,25 +19,26 @@ RUN npm ci
 # ──────────────────────────────────────────────────────────────────────────────
 # STAGE 2: Dev  ---> Servidor de desarrollo Vite con HMR
 # ──────────────────────────────────────────────────────────────────────────────
+# NOTA: No se copian node_modules desde deps porque el bind mount del codigo
+#       en docker-compose monta el directorio completo del host. En su lugar,
+#       se usa un script de entrada que ejecuta 'npm install' para sincronizar
+#       las dependencias cada vez que se inicia el contenedor.
+#       Esto garantiza que los paquetes instalados en modo hibrido (npm install
+#       directo en el host) se reflejen correctamente al usar el modo Docker.
+# ──────────────────────────────────────────────────────────────────────────────
 FROM node:current-alpine3.23 AS dev
 
 WORKDIR /app
 
-# Copiar node_modules desde la etapa de dependencias
-COPY --from=deps /app/node_modules ./node_modules
-
-# Copiar archivos de configuracion del proyecto
+# Copiar archivos de configuracion del proyecto (no node_modules)
 COPY tsconfig.json tsconfig.app.json tsconfig.node.json ./
 COPY vite.config.ts ./
 COPY index.html ./
 COPY eslint.config.js ./
 COPY public ./public
 
-# No copiamos src en el build — se monta como bind mount en docker-compose
-# para que los cambios en tiempo real sean visibles para Vite
-
-# Exponer puerto del servidor de desarrollo Vite
-EXPOSE 5173
+# No copiamos node_modules — se instalaran al arrancar el contenedor
+# (el bind mount expone package.json y package-lock.json del host)
 
 # Variable de entorno para forzar polling en Docker
 ENV CHOKIDAR_USEPOLLING=1
@@ -46,9 +47,30 @@ ENV CHOKIDAR_INTERVAL=1000
 # URL base de la API para el entorno de desarrollo
 ENV VITE_API_BASE_URL=http://localhost:8080/api
 
-# Iniciar Vite en modo desarrollo con --host para aceptar conexiones externas
-# El flag --host 0.0.0.0 es obligatorio para que funcione dentro del contenedor
-ENTRYPOINT ["npx", "vite", "--host", "0.0.0.0", "--port", "5173"]
+# Script de entrada: ejecuta npm install si es necesario, luego inicia Vite
+# Esto asegura que las dependencias instaladas en modo hibrido se sincronicen
+RUN printf '#!/bin/sh\n\
+echo "[dev-entrypoint] Verificando dependencias..."\n\
+if [ ! -d "node_modules" ] || [ ! -f "node_modules/.package-lock.json" ]; then\n\
+  echo "[dev-entrypoint] node_modules no encontrado o incompleto. Ejecutando npm install..."\n\
+  npm install\n\
+else\n\
+  # Verificar si package-lock.json cambio respecto a node_modules\n\
+  if ! cmp -s /app/package-lock.json /app/node_modules/.package-lock.json 2>/dev/null; then\n\
+    echo "[dev-entrypoint] package-lock.json ha cambiado. Reinstalando dependencias..."\n\
+    npm install\n\
+  else\n\
+    echo "[dev-entrypoint] Dependencias actualizadas. Saltando npm install."\n\
+  fi\n\
+fi\n\
+echo "[dev-entrypoint] Iniciando Vite..."\n\
+exec npx vite --host 0.0.0.0 --port 5173\n' > /usr/local/bin/dev-entrypoint.sh && \
+chmod +x /usr/local/bin/dev-entrypoint.sh
+
+# Exponer puerto del servidor de desarrollo Vite
+EXPOSE 5173
+
+ENTRYPOINT ["/usr/local/bin/dev-entrypoint.sh"]
 
 # ──────────────────────────────────────────────────────────────────────────────
 # STAGE 3: Build  ---> Compila para produccion

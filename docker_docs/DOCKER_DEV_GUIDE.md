@@ -22,8 +22,8 @@ El sistema se compone de **tres servicios** interconectados mediante una red Doc
 │       │                      │                 │           │
 │       ▼                      ▼                 ▼           │
 │  Bind Mount            Bind Mount           Named          │
-│  + anon vol           + Maven cache        Volume         │
-│  (HMR listo)          (DevTools listo)    (persist.)      │
+│  (HMR listo)          + Maven cache        Volume         │
+│                       (DevTools listo)    (persist.)      │
 └────────────────────────────────────────────────────────────┘
 ```
 
@@ -70,12 +70,13 @@ El sistema se compone de **tres servicios** interconectados mediante una red Doc
 | **Build** | Multi-stage: `deps` (npm ci) → `dev` (Vite server) |
 | **Puerto** | `5173:5173` |
 | **Volumen código** | Bind mount `./frontend/controlstock:/app` |
-| **Volumen anónimo** | `/app/node_modules` |
+| **Sincronización de dependencias** | Script `dev-entrypoint.sh` que ejecuta `npm install` al arrancar si detecta cambios en `package-lock.json` |
 | **Polling forzado** | `CHOKIDAR_USEPOLLING=1`, `CHOKIDAR_INTERVAL=1000` |
 
 **¿Qué se logra?**  
 - **Hot Module Replacement (HMR)**: Editar → Guardar → Ver cambio en el navegador (~50-200ms).
-- **Protección de node_modules**: El volumen anónimo evita que el bind mount sobrescriba los `node_modules` del contenedor.
+- **Sincronización automática de dependencias**: Al instalar un paquete con `npm install` en modo híbrido, al ejecutar el modo Docker el contenedor detecta el cambio en `package-lock.json` y ejecuta `npm install` automáticamente para reflejar los nuevos paquetes.
+
 - **Polling como fallback**: Funciona en Docker Desktop (Windows/Mac) donde los eventos nativos no se propagan.
 
 ---
@@ -91,19 +92,11 @@ El sistema se compone de **tres servicios** interconectados mediante una red Doc
 | **Integridad** | ✅ Docker gestiona el ciclo de vida | ❌ Riesgo de corrupción |
 | **Permisos** | ✅ Postgres controla permisos (uid 70) | ❌ Conflictos de propietario |
 
-### 3.2 ¿Por qué Bind Mount para el código fuente + Volumen anónimo para node_modules?
-
-**Bind Mount del código fuente (`./frontend/controlstock:/app`)**  
-Permite ver los cambios hechos en el editor **instantáneamente** dentro del contenedor, sin reconstruir la imagen.
-
-**Volumen anónimo (`/app/node_modules`)**  
-Preserva los `node_modules` instalados durante `docker build` para que el bind mount del host no los sobrescriba.
-
-### 3.3 ¿Por qué activar `usePolling` en Vite?
+### 3.2 ¿Por qué activar `usePolling` en Vite?
 
 En Docker Desktop (Windows/Mac), los bind mounts no propagan eventos de sistema de archivos de forma confiable. `usePolling: true` fuerza a Vite a verificar cambios periódicamente (cada 1000ms) mediante polling, sacrificando ~1-2% de CPU para lograr HMR funcional.
 
-### 3.4 ¿Por qué "Build project automatically" en el IDE para Spring Boot?
+### 3.3 ¿Por qué "Build project automatically" en el IDE para Spring Boot?
 
 ```
 Host (IDE)          Contenedor Docker (Backend)
@@ -166,6 +159,24 @@ docker compose -p controlstock-dev build --no-cache
 docker compose -p controlstock-dev --profile dev up
 ```
 
+### Manejando nuevas dependencias
+
+```bash
+# ─── Instalar un nuevo paquete npm (modo híbrido) ───
+cd frontend/controlstock
+npm install axios
+
+# Al ejecutar el modo Docker después, el contenedor detectará
+# automáticamente el cambio y ejecutará npm install.
+
+# ─── Si es necesario forzar la reinstalación ───
+docker compose -p controlstock-dev exec frontend-dev npm install
+
+# ─── Para nuevas dependencias Maven, reconstruir la imagen ───
+docker compose -p controlstock-dev build backend-dev
+docker compose -p controlstock-dev --profile dev up
+```
+
 ### Entorno de Producción
 
 ```bash
@@ -187,18 +198,22 @@ docker compose -p controlstock-prod down
 
 ```
 ControlStock/
-├── docker-compose.yml              ← Orquestación (dev + prod)
-├── Docker_GETTING_STARTED.md       ← Guía rápida para desarrolladores
-├── docker-dev-setup.md             ← Esta documentación técnica
+├── .dockerignore                    ← Excluye archivos del contexto de build
+├── docker-compose.yml               ← Orquestación (dev + prod)
+├── Docker_GETTING_STARTED.md        ← Guía rápida para desarrolladores
+├── docker-dev-setup.md              ← Esta documentación técnica
 │
 ├── backend/controlstock/
-│   ├── Dockerfile                  ← Multi-stage: builder → dev → prod
+│   ├── .dockerignore                ← Excluye target/, .git/, etc.
+│   ├── Dockerfile                   ← Multi-stage: builder → dev → prod
 │   ├── pom.xml
 │   └── src/main/resources/
-│       └── application.properties  ← Configuracion unica (modo hibrido + Docker)
+│       └── application.properties   ← Configuracion unica (modo hibrido + Docker)
 │
 ├── frontend/controlstock/
-│   ├── Dockerfile                  ← Multi-stage: deps → dev → build → prod
+│   ├── .dockerignore                ← Excluye node_modules/, dist/, etc.
+│   ├── Dockerfile                   ← Multi-stage: deps → dev → build → prod
+│   ├── package.json
 │   ├── vite.config.ts
 │   └── src/
 │
@@ -216,7 +231,8 @@ ControlStock/
 |----------|-----------|
 | **Multi-stage build** | Imágenes más pequeñas (dev vs prod), separación de responsabilidades |
 | **Named Volume para BD** | Rendimiento nativo, portabilidad, integridad de datos |
-| **Bind mount + anon volume (frontend)** | HMR funcional sin sobrescribir node_modules |
+| **Bind mount + entrypoint script (frontend)** | Sincronización automática de dependencias npm entre modo híbrido y Docker |
+| **.dockerignore en cada contexto** | Builds más rápidos al excluir archivos innecesarios del contexto de Docker |
 | **usePolling en Vite** | HMR funciona en Docker Desktop (Windows/Mac) |
 | **DevTools + compilación automática** | Hot Reload en Java ~2s |
 | **Healthcheck en PostgreSQL** | Arranque ordenado sin race conditions |

@@ -1,18 +1,17 @@
-# Ignorar dependencias locales (se instalan de forma nativa en el contenedor en STAGE 1)
-node_modules/
-npm-debug.log
+# =============================================================================
+# .dockerignore - Frontend (contexto de build del frontend)
+# =============================================================================
+# Excluye directorios y archivos que no deben enviarse al contexto de Docker.
+# node_modules/ se excluye porque se instala dentro del contenedor.
+# dist/ se excluye porque se genera durante el build.
 
-# Ignorar compilaciones locales
-dist/
-build/
-.vite/
-
-# Ignorar control de versiones y configuraciones de editores
 .git/
 .gitignore
-.gitattributes
-.vscode/
-.idea/
-
-# Ignorar documentación local que no se necesita para la web
 README.md
+*.md
+node_modules/
+dist/
+.idea/
+*.iml
+.vscode/
+eslint.config.js

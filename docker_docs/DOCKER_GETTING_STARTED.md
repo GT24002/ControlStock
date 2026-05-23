@@ -115,7 +115,6 @@ File → Open → Seleccionar ControlStock/backend/controlstock/
 4. Click `Apply → OK`
 
 > [!NOTE]
-> **💡 Un solo archivo de configuracion:**
 > `application.properties` contiene la configuracion completa para el **Modo Híbrido** (backend local + BD en Docker). Apunta a **`localhost:5433`** — el puerto expuesto en el host — e incluye DevTools para recarga rapida.  
 > Cuando ejecutas en **Modo Todo-en-Docker**, `docker-compose.yml` sobrescribe estas propiedades mediante variables de entorno apuntando a los servicios internos:
 >   - **`db-dev:5432`** (perfil dev)
@@ -200,10 +199,7 @@ Comandos:
 
 ---
 
-# 🐳 MODO TODO-EN-DOCKER (Avanzado)
-
-> Todo corre en contenedores. Para desarrolladores que conocen Docker.  
-> *Un solo comando levanta todo.*
+# 🐳 MODO TODO-EN-DOCKER 
 
 ```bash
 docker compose -p controlstock-dev --profile dev up --build
@@ -212,7 +208,7 @@ docker compose -p controlstock-dev --profile dev up --build
 Este modo activa los servicios `backend-dev`, `frontend-dev` y `db-dev` del perfil `dev`.  
 Sin el perfil, `docker compose up` solo levanta PostgreSQL.
 
-**Documentación completa del modo Docker**: [docker-dev-setup.md](./docker-dev-setup.md)
+**Documentación completa del modo Docker**: [DOCKER_DEV_GUIDE.md](./DOCKER_DEV_GUIDE.md)
 
 ---
 
@@ -248,6 +244,10 @@ docker compose -p controlstock-dev up db-dev -d
 # En el frontend (NO dentro del contenedor)
 cd frontend/controlstock
 npm install axios
+
+# Si estabas en modo Docker y cambias a modo híbrido (o viceversa),
+# el contenedor detectará automáticamente los cambios en
+# package-lock.json y ejecutará npm install al arrancar.
 ```
 
 ### "Necesito ejecutar tests de Java"
@@ -315,9 +315,10 @@ server: {
 
 ---
 
-# 📊 Comparativa: ¿Qué modo elegir?
+# 📊 ¿Qué modo elegir?
 
-**Recomendación**: Usa el **Modo Híbrido** para el día a día.  
+**Recomendación**: Usa el **Modo Híbrido** 
+<br>
 El **Modo Todo-en-Docker** es ideal para practicar CI/CD o, cuando quieres un entorno completamente aislado y asegurar que un despliegue funcione igual que en producción.
 
 ---

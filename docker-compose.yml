@@ -109,7 +109,6 @@ services:
       CHOKIDAR_INTERVAL: 1000
     volumes:
       - ./frontend/controlstock:/app
-      - /app/node_modules
     labels:
       - "com.docker.compose.project=controlstock-dev"
       - "environment=development"

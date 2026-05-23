@@ -4,7 +4,7 @@
 # =============================================================================
 
 # ──────────────────────────────────────────────────────────────────────────────
-# STAGE 1: Build  ---> Compila la aplicacion con Maven
+# STAGE 1: Build  ---> Compila la aplicacion con Maven (incluye devtools)
 # ──────────────────────────────────────────────────────────────────────────────
 FROM maven:3.9.9-eclipse-temurin-21-alpine AS builder
 
@@ -23,12 +23,27 @@ COPY src ./src
 RUN mvn clean package -DskipTests -B
 
 # ──────────────────────────────────────────────────────────────────────────────
-# STAGE 2: Dev  ---> Desarrollo con Hot Reload (spring-boot-devtools)
+# STAGE 2: Build (Prod)  ---> Compila para produccion (sin devtools)
+# ──────────────────────────────────────────────────────────────────────────────
+FROM maven:3.9.9-eclipse-temurin-21-alpine AS builder-prod
+
+WORKDIR /build
+
+# Copiar POM y descargar dependencias
+COPY pom.xml ./
+RUN mvn dependency:go-offline -B
+
+# Copiar codigo fuente
+COPY src ./src
+
+# Compilar con perfil de produccion (excluye devtools)
+RUN mvn clean package -DskipTests -Pprod -B
+
+# ──────────────────────────────────────────────────────────────────────────────
+# STAGE 3: Dev  ---> Desarrollo con Hot Reload (spring-boot-devtools)
 # ──────────────────────────────────────────────────────────────────────────────
 FROM eclipse-temurin:21.0.11_10-jre-jammy AS dev
 
-# El JAR se copia a /opt/app/ para que no sea sobrescrito por el bind mount
-# El codigo fuente se monta en /app/ via bind mount (para DevTools)
 WORKDIR /opt/app
 
 # Instalar herramientas necesarias para desarrollo
@@ -43,17 +58,8 @@ COPY --from=builder /build/target/*.jar ./app.jar
 # (DevTools monitorea /app/src para detectar cambios)
 RUN mkdir -p /app/src
 
-# Exponer puertos:
-#   8080 - Aplicacion Spring Boot
-#   5005 - JDWP (depuracion remota)
-#   35729 - LiveReload (spring-boot-devtools)
 EXPOSE 8080 5005 35729
 
-# Punto de entrada: ejecuta la app con DevTools y JDWP activados
-# El JAR esta en /opt/app/app.jar (no en /app/, que es donde va el bind mount)
-# DevTools monitorea /app/target/classes para cambios en el classpath compilado
-# (IntelliJ escribe los .class compilados en target/classes/ del host,
-#  y el bind mount ./backend/controlstock:/app los expone en el contenedor)
 ENTRYPOINT ["java", \
     "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005", \
     "-Dspring.devtools.restart.enabled=true", \
@@ -62,16 +68,23 @@ ENTRYPOINT ["java", \
     "-jar", "/opt/app/app.jar"]
 
 # ──────────────────────────────────────────────────────────────────────────────
-# STAGE 3: Prod  ---> Produccion (sin herramientas de desarrollo)
+# STAGE 4: Prod  ---> Produccion (imagen Alpine JRE ~170MB total)
 # ──────────────────────────────────────────────────────────────────────────────
-FROM eclipse-temurin:21.0.11_10-jre-jammy AS prod
+FROM eclipse-temurin:21-jre-alpine AS prod
 
 WORKDIR /app
 
-# Copiar el JAR desde la etapa builder
-COPY --from=builder /build/target/*.jar ./app.jar
+# Crear usuario no-root para seguridad
+RUN addgroup -S spring && adduser -S spring -G spring
+
+# Copiar el JAR (sin devtools) desde la etapa builder-prod
+COPY --from=builder-prod /build/target/*.jar ./app.jar
+
+# Asegurar permisos
+RUN chown -R spring:spring /app
+
+USER spring:spring
 
 EXPOSE 8080
 
-# En produccion NO se incluye DevTools ni JDWP
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]

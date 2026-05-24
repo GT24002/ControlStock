@@ -1,0 +1,23 @@
+# =============================================================================
+# .dockerignore - Backend (contexto de build del backend)
+# =============================================================================
+# Excluye todo lo que no se necesita durante el build de la imagen Maven/Spring.
+
+.git/
+.gitignore
+README.md
+*.md
+target/
+!.mvn/
+.mvn/
+mvnw
+mvnw.cmd
+.idea/
+*.iml
+*.ipr
+*.iws
+.settings/
+.project
+.classpath
+.vscode/
+node_modules/

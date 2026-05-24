@@ -1,0 +1,16 @@
+# =============================================================================
+# .dockerignore - Frontend (contexto de build del frontend)
+# =============================================================================
+# Excluye directorios y archivos que no deben enviarse al contexto de Docker.
+# node_modules/ se excluye porque se instala dentro del contenedor.
+# dist/ se excluye porque se genera durante el build.
+
+.git/
+.gitignore
+README.md
+*.md
+node_modules/
+dist/
+.idea/
+*.iml
+.vscode/

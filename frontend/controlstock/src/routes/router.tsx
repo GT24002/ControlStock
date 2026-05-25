@@ -5,6 +5,7 @@ import App from "./../App.tsx";
 const Dashboard = lazy(() => import("./../pages/dashboard/Dashboard.tsx"));
 const Roles = lazy(() => import("./../pages/roles/Roles.tsx"));
 const RolesAdd = lazy(() => import("./../pages/roles/RolesAdd.tsx"));
+const RolesEdit = lazy(() => import("./../pages/roles/RolesEdit.tsx"));
 
 const LazyLoad = ({ children }: { children: React.ReactNode }) => (
   <Suspense
@@ -48,6 +49,14 @@ export const router = createBrowserRouter([
         element: (
           <LazyLoad>
             <RolesAdd />
+          </LazyLoad>
+        ),
+      },
+      {
+        path: "roles/editar/:id",
+        element: (
+          <LazyLoad>
+            <RolesEdit />
           </LazyLoad>
         ),
       },

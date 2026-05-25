@@ -1,4 +1,6 @@
+import { useEffect, useState } from "react";
 import { Package, AlertTriangle, FolderTree } from "lucide-react";
+import { roleService } from "../../core/api/services/role-service";
 
 const cards = [
   {
@@ -28,6 +30,22 @@ const cards = [
 ];
 
 const Dashboard = () => {
+  const [roles, setRoles] = useState<unknown[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    roleService
+      .getAll()
+      .then((res) => setRoles(res.data))
+      .catch((err) => {
+        if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError("Error desconocido al obtener roles");
+        }
+      });
+  }, []);
+
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold text-[#2f2e2e] mb-6">Dashboard</h1>
@@ -53,6 +71,26 @@ const Dashboard = () => {
             </div>
           );
         })}
+      </div>
+
+      {/* Respuesta de la API mostrada como JSON */}
+      <div className="mt-8">
+        <h2 className="text-lg font-semibold text-[#2f2e2e] mb-3">
+          Respuesta de GET /api/roles
+        </h2>
+        {error ? (
+          <pre className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700 overflow-auto max-h-64">
+            {error}
+          </pre>
+        ) : roles === null ? (
+          <pre className="bg-gray-50 border border-gray-200 rounded-xl p-4 text-sm text-gray-500">
+            Cargando...
+          </pre>
+        ) : (
+          <pre className="bg-gray-50 border border-gray-200 rounded-xl p-4 text-sm text-gray-800 overflow-auto max-h-64">
+            {JSON.stringify(roles, null, 2)}
+          </pre>
+        )}
       </div>
     </div>
   );

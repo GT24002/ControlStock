@@ -1,0 +1,15 @@
+# =============================================================================
+# .dockerignore - ControlStock (raiz del proyecto)
+# =============================================================================
+# Excluye archivos y directorios innecesarios del contexto de build de Docker
+# para evitar invalidacion de cache y envios innecesarios.
+
+.git/
+.gitignore
+README.md
+*.md
+docker_docs/
+node_modules/
+package-lock.json
+
+# Los Dockerfiles y contextos especificos estan dentro de backend/ y frontend/

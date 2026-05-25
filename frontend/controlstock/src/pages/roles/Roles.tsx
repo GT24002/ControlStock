@@ -1,10 +1,20 @@
+import { useState } from "react";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { getRoles } from "../../utils/roleCrud";
+import { getRoles, deleteRole } from "../../utils/roleCrud";
+import ConfirmDialog from "../../shared/ui/ConfirmDialog";
 
 const Roles = () => {
   const navigate = useNavigate();
-  const roles = getRoles();
+  const [roles, setRoles] = useState(getRoles());
+  const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null);
+
+  const handleDelete = () => {
+    if (deleteTarget === null) return;
+    deleteRole(deleteTarget.id);
+    setRoles(getRoles());
+    setDeleteTarget(null);
+  };
 
   return (
     <div className="p-6">
@@ -20,7 +30,8 @@ const Roles = () => {
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full text-sm min-w-[600px]">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
               <th className="text-left px-6 py-3 font-semibold text-gray-600">ID</th>
@@ -52,7 +63,7 @@ const Roles = () => {
                         <Pencil size={18} />
                       </button>
                       <button
-                        onClick={() => navigate(`/roles/eliminar/${role.id}`)}
+                        onClick={() => setDeleteTarget({ id: role.id, name: role.roleName })}
                         className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                         title="Eliminar"
                       >
@@ -65,7 +76,16 @@ const Roles = () => {
             )}
           </tbody>
         </table>
+        </div>
       </div>
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title="Eliminar rol"
+        message={`¿Estás seguro de que deseas eliminar el rol "${deleteTarget?.name}"? Esta acción no se puede deshacer.`}
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 };

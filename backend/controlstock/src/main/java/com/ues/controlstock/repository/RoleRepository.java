@@ -7,4 +7,3 @@ import com.ues.controlstock.entity.Role;
 public interface RoleRepository extends JpaRepository<Role, Long> {
     
 }
-    

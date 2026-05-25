@@ -3,8 +3,8 @@ package com.ues.controlstock.dto;
 import lombok.*;
 
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor
-public class RoleDTO {
-    private Long roleId;
-    private String roleName;
+public class CategoryDTO {
+    private Long categoryId;
+    private String name;
     private String description;
 }

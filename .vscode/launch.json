@@ -1,0 +1,14 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Spring Boot-ControlstockApplication<controlstock>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.ues.controlstock.ControlstockApplication",
+            "projectName": "controlstock",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}

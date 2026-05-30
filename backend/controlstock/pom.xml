@@ -26,6 +26,7 @@
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
 
+
 		<!-- JPA + PostgreSQL -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

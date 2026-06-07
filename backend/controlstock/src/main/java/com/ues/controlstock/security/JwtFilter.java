@@ -13,6 +13,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
+
 // Intercepta cada request y valida el token JWT antes de dar acceso
 @Component
 public class JwtFilter extends OncePerRequestFilter {

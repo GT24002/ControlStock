@@ -60,7 +60,7 @@ public class DataInitializer implements CommandLineRunner {
 
         // 4. Le asignamos el rol "admin"
         AppUserRole userInRole = appUserRoleRepository.findByRoleIdAndAppUserId(adminRole.getRoleId(), adminUser.getUserId());
-        if (!(userInRole.getId() > 0)) {
+        if (userInRole == null) {
             AppUserRole userRole = new AppUserRole();
             userRole.setAppUser(adminUser);
             userRole.setRole(adminRole);

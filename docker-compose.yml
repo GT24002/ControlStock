@@ -101,7 +101,7 @@ services:
       - controlstock-net-prod
 
   # ===========================================================================
-  # Perfil: prod - Backend (Spring Boot optimizado)
+  # Perfil: prod - Backend 
   # ===========================================================================
   backend-prod:
     profiles:

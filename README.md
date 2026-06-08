@@ -4,30 +4,102 @@
 
 | Nombre | Carnet |
 |--------|--------|
-| Kevin Roberto Gomez Tobar   | GT24002 |
+| Kevin Roberto Gomez Tobar | GT24002 |
 | Rafael Armando Ibañez Diego | ID24001 |
 | Yohalmo Alonso Castro Siguenza | CS24009 |
-| Brayan Alexander Villalta Gutierrez| VG24003 |
-| Mynor Ivan Carias Martinez |CM23138|
+| Brayan Alexander Villalta Gutierrez | VG24003 |
+| Mynor Ivan Carias Martinez | CM23138 |
+
+---
+
+### 🗄️ Base de datos
+
+Los scripts SQL están en la carpeta [`database/`](database/):
+
+- `1-create_tables.sql` — Creación de tablas
+- `2-seed_data.sql` — Datos de ejemplo
+- [`DB_README.md`](database/DB_README.md) — Instrucciones básicas para recrear la BD
+
+## 🐳 Cómo ejecutar el proyecto con Docker
+
+Solo necesitas **Docker Desktop** instalado.
+
+[Guía de instalacion Docker en Windows](https://learn.microsoft.com/es-es/virtualization/windowscontainers/manage-docker/configure-docker-daemon)
+<br/>
+[Guía de instalacion Docker en Linux](https://docs.docker.com/engine/install/ubuntu/)
 
 
-## Dockerizacion del proyecto
 
-Para entender la arquitectura, levantar los entornos y comprender el funcionamiento de Docker en esta aplicación, disponemos de las siguientes guías técnicas detalladas:
+### Opción 1: Desarrollo con BD local
 
-### 1. Guía de Inicio Rápido
-* **Archivo:** [DOCKER_GETTING_STARTED.md](docker_docs/DOCKER_GETTING_STARTED.md)
-<br>Cómo empezar a programar en el día a día. Explica el **Modo Híbrido** (base de datos en Docker y código corriendo localmente en IntelliJ/VSCode Vite) y el **Modo Todo-en-Docker** para levantar el sistema completo con un solo comando.
+Esta opción sirve con PostgreSQL instalado o una imagen docker previa para tu base de datos PostgreSQL.
 
-### 2. Sustento Técnico de Desarrollo (Docker Dev)
-* **Archivo:** [DOCKER_DEV_GUIDE.md](docker_docs/DOCKER_DEV_GUIDE.md)
-<br>La arquitectura técnica de desarrollo **Modo Todo-en-Docker**. Explica detalladamente cómo se logra el *Hot Reload* en Java y React dentro de contenedores usando *bind mounts*, caché persistente de dependencias y *polling* de archivos para solucionar bloqueos en Windows/WSL.
 
-### 3. Simulación de Producción y Optimización
-* **Archivo:** [DOCKER_PROD_GUIDE.md](docker_docs/DOCKER_PROD_GUIDE.md)
-<br>Cómo se optimiza la aplicación para el mundo real. Explica la arquitectura de **Multi-stage Builds**, el uso del servidor **Nginx** de alto rendimiento sirviendo estáticos, la prevención de errores de CORS mediante **Proxy Reverso**, y el uso seguro de validación de base de datos.
+#### 1. Prepara tu base de datos local
 
-### 4. Inicialización de Base de Datos
-> <b><i>OPCIONAL: Esto se hace solo si no tienes docker instalado, o si quieres recrear la base de datos.</i></b>
+Pasos detallados para recrear la base de datos de PostgreSQL e inicializar los scripts con la carga semilla de datos iniciales.
 * **Archivo:** [DB_README.md](database/DB_README.md)
-<br>Pasos detallados para recrear la base de datos de PostgreSQL e inicializar los scripts con la carga semilla de datos iniciales.
+
+
+### ⚙️ ¿Dónde configurar los datos de tu base de datos local?
+
+Los datos de conexión se configuran en el archivo **`docker-compose.yml`**, en la sección `backend-dev` > `environment`:
+
+```yaml
+backend-dev:
+  environment:
+    SPRING_DATASOURCE_URL: jdbc:postgresql://host.docker.internal:5432/controlstockdb
+    SPRING_DATASOURCE_USERNAME: admin
+    SPRING_DATASOURCE_PASSWORD: admin123
+```
+
+Cambia `controlstockdb`, `admin` y `admin123` por los valores de tu base de datos local.
+
+> **Nota Importante:**  
+> Estos cambios no deben subir a GitHub, ya que son configuraciones locales de cada usuario.
+
+---
+
+#### 2. Levanta backend y frontend
+
+```bash
+docker compose -p controlstock-dev --profile dev up --build
+```
+
+| Servicio | URL |
+|----------|-----|
+| 🌐 Frontend | [http://localhost:5173](http://localhost:5173) |
+| 🔌 Backend (API) | [http://localhost:8080](http://localhost:8080) |
+
+---
+
+### Opción 2: Todo con Docker (simulación de producción)
+
+Un solo comando levanta **base de datos + backend + frontend**:
+
+```bash
+docker compose -p controlstock-prod --profile prod up --build -d
+```
+
+| Servicio | URL |
+|----------|-----|
+| 🌐 Frontend | [http://localhost](http://localhost) |
+| 🔌 Backend (API) | [http://localhost:8081](http://localhost:8081) |
+| 🗄️ PostgreSQL | `localhost:5434` — usuario: `admin_prod` / contraseña: `admin_production_password` |
+
+Para detenerlo:
+
+```bash
+docker compose -p controlstock-prod down
+```
+
+---
+
+### 📖 Guía detallada
+
+Si quieres entender cómo funciona Docker en este proyecto, revisa:
+
+👉 [GUIA_DOCKER.md](docker_docs/GUIA_DOCKER.md)
+
+---
+

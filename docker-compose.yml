@@ -6,17 +6,13 @@
 #
 # Comandos de uso:
 #
-# 1. MODO HIBRIDO (solo base de datos de desarrollo en Docker,
-#    backend y frontend se ejecutan localmente):
-#      docker compose -p controlstock-dev up db-dev -d
-#
-# 2. ENTORNO DE DESARROLLO COMPLETO (todo en Docker - perfil "dev"):
+# 1. ENTORNO DE DESARROLLO (back+front en Docker, BD externa local):
 #      docker compose -p controlstock-dev --profile dev up --build -d
 #
-# 3. ENTORNO DE PRODUCCION (todo en Docker - perfil "prod"):
+# 2. ENTORNO DE PRODUCCION (todo en Docker - perfil "prod"):
 #      docker compose -p controlstock-prod --profile prod up --build -d
 #
-# 4. AMBOS ENTORNOS SIMULTANEAMENTE:
+# 3. AMBOS ENTORNOS SIMULTANEAMENTE:
 #      docker compose -p controlstock-dev --profile dev up --build -d
 #      docker compose -p controlstock-prod --profile prod up --build -d
 # =============================================================================
@@ -24,91 +20,48 @@
 services:
 
   # ===========================================================================
-  # Perfil: dev - Base de Datos de Desarrollo
-  # ===========================================================================
-  db-dev:
-    profiles:
-      - dev
-    image: postgres:16.13-alpine3.23
-    container_name: controlstock-db-dev
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: controlstock
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: admin123
-    ports:
-      - "5433:5432"
-    volumes:
-      - pgdata_dev:/var/lib/postgresql/data
-      - ./database:/docker-entrypoint-initdb.d:ro
-    labels:
-      - "com.docker.compose.project=controlstock-dev"
-      - "environment=development"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U admin -d controlstock"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 15s
-    networks:
-      - controlstock-net-dev
-
-  # ===========================================================================
-  # Perfil: dev - Backend (Spring Boot con DevTools y JDWP)
+  # Perfil: dev - Backend (Spring Boot)
+  # Se conecta a una BD PostgreSQL externa local (host.docker.internal)
   # ===========================================================================
   backend-dev:
     profiles:
       - dev
     build:
       context: ./backend/controlstock
-      target: dev
-    image: controlstock-backend-dev:latest
+    image: controlstock-backend:latest
     container_name: controlstock-backend-dev
     restart: unless-stopped
     ports:
       - "8080:8080"
-      - "5005:5005"
-      - "35729:35729"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db-dev:5432/controlstock
+      # Conectarse a PostgreSQL externo local (no dockerizado)
+      SPRING_DATASOURCE_URL: jdbc:postgresql://host.docker.internal:5432/controlstockdb
       SPRING_DATASOURCE_USERNAME: admin
       SPRING_DATASOURCE_PASSWORD: admin123
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
-      SPRING_DEVTOOLS_RESTART_ENABLED: "true"
-      SPRING_DEVTOOLS_LIVERELOAD_ENABLED: "true"
-      SPRING_DEVTOOLS_RESTART_ADDITIONAL_PATHS: /app/target/classes
-      JAVA_OPTS: -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
-    volumes:
-      - ./backend/controlstock:/app
-      - m2-cache-dev:/root/.m2
     labels:
       - "com.docker.compose.project=controlstock-dev"
       - "environment=development"
-    depends_on:
-      db-dev:
-        condition: service_healthy
     networks:
-      - controlstock-net-dev
+      controlstock-net-dev:
+        aliases:
+          - backend
 
   # ===========================================================================
-  # Perfil: dev - Frontend (React + Vite con HMR)
+  # Perfil: dev - Frontend (React + Nginx)
   # ===========================================================================
   frontend-dev:
     profiles:
       - dev
     build:
-      context: ./frontend/controlstock
-      target: dev
-    image: controlstock-frontend-dev:latest
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: http://localhost:8080/api
+    image: controlstock-frontend:latest
     container_name: controlstock-frontend-dev
     restart: unless-stopped
     ports:
-      - "5173:5173"
-    environment:
-      CHOKIDAR_USEPOLLING: 1
-      CHOKIDAR_INTERVAL: 1000
-    volumes:
-      - ./frontend/controlstock:/app
+      - "5173:80"
     labels:
       - "com.docker.compose.project=controlstock-dev"
       - "environment=development"
@@ -127,7 +80,7 @@ services:
     container_name: controlstock-db-prod
     restart: always
     environment:
-      POSTGRES_DB: controlstock
+      POSTGRES_DB: controlstockdb
       POSTGRES_USER: admin_prod
       POSTGRES_PASSWORD: admin_production_password
     ports:
@@ -155,8 +108,7 @@ services:
       - prod
     build:
       context: ./backend/controlstock
-      target: prod
-    image: controlstock-backend-prod:latest
+    image: controlstock-backend:latest
     container_name: controlstock-backend-prod
     restart: always
     environment:
@@ -175,7 +127,9 @@ services:
       db-prod:
         condition: service_healthy
     networks:
-      - controlstock-net-prod
+      controlstock-net-prod:
+        aliases:
+          - backend
 
   # ===========================================================================
   # Perfil: prod - Frontend (React + Nginx)
@@ -184,9 +138,10 @@ services:
     profiles:
       - prod
     build:
-      context: ./frontend/controlstock
-      target: prod
-    image: controlstock-frontend-prod:latest
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: http://localhost:8081/api
+    image: controlstock-frontend:latest
     container_name: controlstock-frontend-prod
     restart: always
     ports:
@@ -214,9 +169,5 @@ networks:
 # Volumenes
 # =============================================================================
 volumes:
-  pgdata_dev:
-    name: controlstock_pgdata_dev
-  m2-cache-dev:
-    name: controlstock_m2_cache_dev
   pgdata_prod:
     name: controlstock_pgdata_prod

@@ -1,6 +1,6 @@
 # 🚀 Guía de Inicio Rápido para Desarrolladores
 
-> **ControlStock con Docker + IntelliJ + VSCode**  
+> **ControlStock con Docker**  
 > *Dos modos de trabajo: elige al que mejor te adaptes.*
 
 ---
@@ -9,316 +9,141 @@
 
 | Modo | PostgreSQL | Backend | Frontend |
 |------|-----------|---------|----------|
-| **🌓 HÍBRIDO** (recomendado) | Docker | IntelliJ | VS Code `npm run dev` |
-| **🐳 TODO-EN-DOCKER** (full) | Docker | Docker | Docker |
-
-Ambos modos comparten la misma base de datos PostgreSQL en Docker.  
-**Tú decides cómo ejecutar el backend y frontend.**
+| **🐳 DESARROLLO** | **Externa local** (no Docker) | Docker | Docker (Nginx) |
+| **🚀 PRODUCCIÓN** | Docker (inicializada automáticamente) | Docker (Alpine optimizado) | Docker (Nginx) |
 
 ---
 
-# 🌓 MODO HÍBRIDO (Recomendado)
+# 🐳 MODO DESARROLLO
 
-> PostgreSQL en Docker + Backend en IntelliJ + Frontend con VS Code `npm run dev`  
-> *Sin necesidad de saber Docker — solo editas y guardas como siempre.*
+## Prerrequisito: PostgreSQL local
 
----
+El backend en modo desarrollo se conecta a una base de datos PostgreSQL **externa local** (en tu máquina host).
 
-## 📋 Prerrequisitos
+### Windows:
+1. Descargar e instalar PostgreSQL 16 desde [postgresql.org](https://www.postgresql.org/download/windows/)
+2. Durante la instalación, configura el usuario `postgres` con contraseña
+3. Abre `SQL Shell (psql)` o cmd y ejecuta:
+```bash
+psql -U postgres -c "CREATE DATABASE controlstock;"
+psql -U postgres -c "CREATE USER admin WITH PASSWORD 'admin123';"
+psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE controlstock TO admin;"
+psql -U admin -d controlstock -f database/1-create_tables.sql
+psql -U admin -d controlstock -f database/2-seed_data.sql
+```
 
-| Herramienta | Versión Mínima | ¿Para qué? |
-|-------------|---------------|------------|
-| **Docker Desktop** | 4.x+ | Solo para PostgreSQL |
-| **IntelliJ IDEA** (Ultimate o Community) | 2024.x+ | Backend Java + Spring Boot |
-| **Node.js** | 20.x+ | Frontend React/Vite |
-| **VSCode** | 1.90+ | Frontend (opcional, editor alternativo) |
-| **Git** | 2.40+ | Clonar repositorio |
+### Linux/Mac:
+```bash
+sudo -u postgres psql -c "CREATE DATABASE controlstock;"
+sudo -u postgres psql -c "CREATE USER admin WITH PASSWORD 'admin123';"
+sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE controlstock TO admin;"
+psql -U admin -d controlstock -f database/1-create_tables.sql
+psql -U admin -d controlstock -f database/2-seed_data.sql
+```
 
-**⚠️ Windows**: Docker Desktop debe usar **WSL2 backend**.
-[Guia de instalacion WSL2](https://learn.microsoft.com/es-es/windows/wsl/install)
-
-
----
-
-## Paso 1: Clonar el Repositorio
+## Ejecutar el entorno de desarrollo
 
 ```bash
-git clone https://github.com/GT24002/ControlStock.git
-cd ControlStock
-```
+# Requisito: PostgreSQL corriendo localmente en puerto 5432
+# con BD 'controlstock', usuario 'admin', contraseña 'admin123'
 
-Estructura del proyecto:
-
-```
-ControlStock/
-├── docker-compose.yml
-├── GETTING_STARTED.md
-├── backend/controlstock/
-│   ├── Dockerfile
-│   ├── pom.xml
-│   └── src/main/resources/
-│       └── application.properties
-├── frontend/controlstock/
-│   ├── Dockerfile
-│   ├── vite.config.ts
-│   └── src/
-└── database/
-    ├── 1-create_tables.sql
-    └── 2-seed_data.sql
-```
-
----
-
-## Paso 2: Levantar SOLO PostgreSQL
-
-```bash
-# ─── Único comando necesario ───
-docker compose -p controlstock-dev up db-dev -d
-```
-
-**¿Qué hace?**
-1. Descarga la imagen de PostgreSQL 16.13 (solo la primera vez)
-2. Crea la base de datos `controlstock` con usuario `admin`/`admin123`
-3. Ejecuta los scripts SQL de `database/` para crear tablas y datos iniciales
-4. PostgreSQL queda disponible en `localhost:5433`
-
-**Verificar que funciona:**
-```bash
-docker compose -p controlstock-dev ps
-# Name                    Status
-# controlstock-db-dev     Up (healthy)
-```
-
----
-
-## Paso 3: Backend desde IntelliJ
-
-### 3.1 Abrir el proyecto
-```
-File → Open → Seleccionar ControlStock/backend/controlstock/
-```
-
-### 3.2 Configurar la ejecucion en IntelliJ
-
-1. `Run → Edit Configurations`
-2. Click `+` → `Application`
-3. Configurar:
-
-| Campo | Valor |
-|-------|-------|
-| Main class | `com.ues.controlstock.ControlstockApplication` |
-| Module | `controlstock` |
-| Active Profiles | *(dejar vacio — por defecto usa application.properties)* |
-| Working directory | `ControlStock/backend/controlstock` |
-| JDK | `21` (corregir si no aparece) |
-
-4. Click `Apply → OK`
-
-> [!NOTE]
-> `application.properties` contiene la configuracion completa para el **Modo Híbrido** (backend local + BD en Docker). Apunta a **`localhost:5433`** — el puerto expuesto en el host — e incluye DevTools para recarga rapida.  
-> Cuando ejecutas en **Modo Todo-en-Docker**, `docker-compose.yml` sobrescribe estas propiedades mediante variables de entorno apuntando a los servicios internos:
->   - **`db-dev:5432`** (perfil dev)
->   - **`db-prod:5432`** (perfil prod)
-
-### 3.3 Habilitar compilación automática (Hot Reload)
-```
-Settings → Build, Execution, Deployment → Compiler
-✅ "Build project automatically"
-```
-
-```
-Settings → Advanced Settings
-✅ "Allow auto-make to start even if development application is currently running"
-```
-
-### 3.4 Ejecutar el proyecto
-- Click ▶️ (Run) en la esquina superior derecha
-- O haz clic derecho en la clase principal → `Run`
-
-**Verificar**: La consola debe mostrar:
-```
-Started Application in 3.456 seconds
-```
-
-Y la API Swagger en: [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
-
----
-
-## Paso 4: Frontend con npm run dev
-
-### 4.1 Abrir terminal en el frontend
-```bash
-cd frontend/controlstock
-```
-
-### 4.2 Instalar dependencias (solo la primera vez)
-```bash
-npm install
-```
-
-### 4.3 Iniciar servidor de desarrollo
-```bash
-npm run dev
-```
-
-**Verificar**: Debes ver:
-```
-➜  Local:   http://localhost:5173/
-```
-
-Abre [http://localhost:5173](http://localhost:5173) en tu navegador.
-
-## ✅ Resumen del Modo Híbrido
-
-```
-┌──────────────────────────────────────────────────┐
-│                 TU MÁQUINA LOCAL                  │
-├──────────────────────────────────────────────────┤
-│                                                   │
-│  ┌──────────────┐     ┌──────────────┐           │
-│  │  IntelliJ    │     │   Terminal   │           │
-│  │  Backend     │     │  npm run dev │           │
-│  │  :8080       │     │  :5173       │           │
-│  └──────┬───────┘     └──────┬───────┘           │
-│         │                     │                   │
-│         └──────┬──────────────┘                   │
-│                │                                  │
-│         ┌──────▼───────┐                          │
-│         │   Docker     │                          │
-│         │ PostgreSQL   │                          │
-│         │  localhost:5433                         │
-│         └──────────────┘                          │
-└──────────────────────────────────────────────────┘
-
-Comandos:
-  docker compose -p controlstock-dev up db-dev -d  ← Inicia BD
-  [IntelliJ] ▶️ Run                                 ← Inicia Backend
-  npm run dev                                       ← Inicia Frontend
-  docker compose -p controlstock-dev down           ← Detiene BD
-```
-
----
-
-# 🐳 MODO TODO-EN-DOCKER 
-
-```bash
 docker compose -p controlstock-dev --profile dev up --build
 ```
 
-Este modo activa los servicios `backend-dev`, `frontend-dev` y `db-dev` del perfil `dev`.  
-Sin el perfil, `docker compose up` solo levanta PostgreSQL.
+Esto levanta:
+- **backend-dev**: Spring Boot en `localhost:8080`
+- **frontend-dev**: React compilado servido por Nginx en `localhost:5173`
 
-**Documentación completa del modo Docker**: [DOCKER_DEV_GUIDE.md](./DOCKER_DEV_GUIDE.md)
+**Documentación completa**: [DOCKER_DEV_GUIDE.md](./DOCKER_DEV_GUIDE.md)
+
+---
+
+# 🚀 MODO PRODUCCIÓN
+
+```bash
+docker compose -p controlstock-prod --profile prod up --build -d
+```
+
+Este modo dockeriza TODO, incluyendo PostgreSQL, que se inicializa automáticamente con los scripts SQL de `database/`.
+
+- **db-prod**: PostgreSQL en `localhost:5434`
+- **backend-prod**: Spring Boot optimizado en `localhost:8081`
+- **frontend-prod**: Nginx sirviendo la SPA en `localhost:80`
+
+**Documentación completa**: [DOCKER_PROD_GUIDE.md](./DOCKER_PROD_GUIDE.md)
 
 ---
 
 # 🔧 Flujo de Trabajo Diario
 
-
 ```bash
 cd ControlStock
 
-# 1. Traer cambios, actualizar tu rama con los cambios de main
+# 1. Asegúrate que PostgreSQL local esté corriendo
+#    (postgresql service, o pg_ctl start)
 
-# 2. Iniciar PostgreSQL (si no está corriendo)
-docker compose -p controlstock-dev up db-dev -d
+# 2. Iniciar todo el entorno de desarrollo
+docker compose -p controlstock-dev --profile dev up --build
 
-# 3. Backend → IntelliJ ▶️
-# 4. Frontend → npm run dev
+# 3. Desarrollo: editar código → reconstruir imagen
+docker compose -p controlstock-dev --profile dev up --build
 ```
 
-### "Necesito ver logs de PostgreSQL"
-```bash
-docker compose -p controlstock-dev logs -f db-dev
-```
+**Nota**: Tanto backend como frontend usan la **misma imagen** en desarrollo y producción. La única diferencia es la configuración (variables de entorno y ARG build).
 
-### "Necesito resetear la base de datos"
+### "Necesito ver logs de desarrollo"
 ```bash
-# ⚠️ Borra TODOS los datos
-docker compose -p controlstock-dev down -v
-docker compose -p controlstock-dev up db-dev -d
+docker compose -p controlstock-dev logs -f backend-dev
+docker compose -p controlstock-dev logs -f frontend-dev
 ```
 
 ### "Necesito instalar una dependencia npm"
 ```bash
-# En el frontend (NO dentro del contenedor)
-cd frontend/controlstock
+cd frontend
 npm install axios
-
-# Si estabas en modo Docker y cambias a modo híbrido (o viceversa),
-# el contenedor detectará automáticamente los cambios en
-# package-lock.json y ejecutará npm install al arrancar.
+# Luego reconstruir la imagen:
+docker compose -p controlstock-dev --profile dev up --build
 ```
 
 ### "Necesito ejecutar tests de Java"
 ```bash
-# Desde IntelliJ: Click derecho sobre el test → Run
-# O desde terminal:
 cd backend/controlstock
 mvn test
 ```
 
-### "Necesito acceder a la BD directamente"
-```bash
-docker compose -p controlstock-dev exec db-dev psql -U admin -d controlstock
-```
-
 ### "Terminé mi jornada"
 ```bash
-# Detener PostgreSQL y conserva datos
+# Detener servicios de desarrollo
 docker compose -p controlstock-dev down
-
-# Para liberar espacio:
-docker system prune
 ```
 
 ---
 
 # ⚠️ Solución de Problemas
 
-### 🔴 "Port 5433 is already in use"
-**Causa**: Tienes PostgreSQL instalado localmente.
-```bash
-# Windows:
-net stop postgresql-x64-16
-```
-
 ### 🔴 "Backend no conecta a PostgreSQL"
-1. Verifica que PostgreSQL esté corriendo: `docker compose -p controlstock-dev ps`
-2. Verifica el estado: `docker compose -p controlstock-dev logs db-dev`
-3. Espera el healthcheck: `db-dev` debe mostrar `Up (healthy)`
-4. En IntelliJ, verifica `application.properties` apunta a `localhost:5433`
+1. Verifica que PostgreSQL esté corriendo localmente en `localhost:5432`
+2. Verifica que la BD `controlstock` y el usuario `admin` existan
+3. Verifica logs: `docker compose -p controlstock-dev logs backend-dev`
 
-### 🔴 "Frontend: npm install falla"
+### 🔴 "Port 5173/8080/5434 already in use"
 ```bash
-# Limpiar caché y reintentar
-rm -rf node_modules package-lock.json
-npm install
+# Detener cualquier proceso usando esos puertos
+netstat -ano | findstr :5173
 ```
 
-### 🔴 "Vite: HMR no funciona"
-Verifica en el navegador (F12 → Console):
-- Debe aparecer: `[vite] connected.`
-
-Si no aparece, en `vite.config.ts` asegúrate de tener:
-```typescript
-server: {
-  host: "0.0.0.0",     // solo para modo Docker
-  port: 5173,
-  hmr: {
-    host: "localhost",
-    port: 5173,
-    protocol: "ws"
-  }
-}
+### 🔴 "Frontend: npm compilacion falla al construir"
+```bash
+# Forzar reconstrucción sin caché
+docker compose -p controlstock-dev build --no-cache frontend-dev
+docker compose -p controlstock-dev --profile dev up
 ```
 
 ---
 
 # 📊 ¿Qué modo elegir?
 
-**Recomendación**: Usa el **Modo Híbrido** 
-<br>
-El **Modo Todo-en-Docker** es ideal para practicar CI/CD o, cuando quieres un entorno completamente aislado y asegurar que un despliegue funcione igual que en producción.
+**Recomendación**: Usa el **Modo Desarrollo** para el día a día.  
+El **Modo Producción** para simular un despliegue real con BD dockerizada e inicialización automática.
 
 ---

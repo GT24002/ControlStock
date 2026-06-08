@@ -1,0 +1,30 @@
+# =============================================================================
+# .dockerignore - Frontend (contexto de build del frontend)
+# =============================================================================
+# Este archivo se aplica cuando Docker construye la imagen del frontend
+# (contexto: ./frontend/). Excluye archivos innecesarios para:
+#   1. Reducir el tamano del contexto enviado al demonio de Docker
+#   2. Evitar invalidar la cache de capas por cambios irrelevantes
+#   3. Prevenir que node_modules/ locales (del host) interfieran con
+#      la instalacion limpia dentro del contenedor (npm ci)
+# =============================================================================
+
+# Git
+.git/
+.gitignore
+
+# Documentacion (no necesaria para el build)
+README.md
+*.md
+
+# Dependencias locales del host (se instalaran dentro del contenedor
+# via 'npm ci' en la etapa 'deps' del Dockerfile)
+node_modules/
+
+# Archivos compilados (se generan dentro del contenedor en la etapa 'build')
+dist/
+
+# Configuraciones de IDE
+.idea/
+*.iml
+.vscode/

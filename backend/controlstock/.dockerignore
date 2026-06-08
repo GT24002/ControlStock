@@ -1,17 +1,33 @@
 # =============================================================================
 # .dockerignore - Backend (contexto de build del backend)
 # =============================================================================
-# Excluye todo lo que no se necesita durante el build de la imagen Maven/Spring.
+# Este archivo se aplica cuando Docker construye la imagen del backend
+# (contexto: ./backend/controlstock/). Excluye archivos innecesarios para:
+#   1. Reducir el tamano del contexto enviado al demonio de Docker
+#   2. Evitar invalidar la cache de capas por cambios irrelevantes
+#   3. Prevenir que archivos compilados localmente (target/) interfieran
+#      con la compilacion limpia dentro del contenedor (Maven)
+# =============================================================================
 
+# Git
 .git/
 .gitignore
+
+# Documentacion
 README.md
 *.md
+
+# Archivos compilados localmente (se generaran dentro del contenedor
+# via 'mvn package' en las etapas builder, builder-prod y dev-build)
 target/
+
+# Scripts Maven del host (no necesarios; se usa el Maven de la imagen)
 !.mvn/
 .mvn/
 mvnw
 mvnw.cmd
+
+# Configuraciones de IDE
 .idea/
 *.iml
 *.ipr
@@ -20,4 +36,6 @@ mvnw.cmd
 .project
 .classpath
 .vscode/
+
+# Dependencias npm (por si acaso hay algun node_modules residual)
 node_modules/

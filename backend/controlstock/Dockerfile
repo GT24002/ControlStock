@@ -1,88 +1,75 @@
 # =============================================================================
 # Dockerfile: Backend Spring Boot (Java 21 + Maven)
-# Estrategia: Multi-stage Build para separar build de runtime
+# =============================================================================
+# Estrategia: Multi-stage Build (Construccion Multietapa)
+#
+# Etapas (stages):
+#   1. builder  → Compila el JAR con Maven
+#   2. final    → Runtime de produccion (Alpine JRE, usuario no-root)
+#
+# Beneficios del multi-stage:
+#   - La etapa builder usa una imagen Maven pesada (~700MB), pero SOLO
+#     durante el build; la etapa final usa JRE Alpine ligero (~170MB)
+#   - Cache de capas: mientras pom.xml no cambie, las dependencias de
+#     Maven se reutilizan entre reconstrucciones
 # =============================================================================
 
-# ──────────────────────────────────────────────────────────────────────────────
-# STAGE 1: Build  ---> Compila la aplicacion con Maven (incluye devtools)
-# ──────────────────────────────────────────────────────────────────────────────
+
+# =============================================================================
+# STAGE 1: builder  ---> Compila el JAR con Maven
+# =============================================================================
+# Proposito: Compilar el codigo fuente de la aplicacion en un JAR ejecutable.
+#
+# Cache de capas:
+#   1. COPY pom.xml + RUN mvn dependency:go-offline
+#      → Se almacena en cache MIENTRAS pom.xml no cambie
+#   2. COPY src + RUN mvn package
+#      → Solo se re-ejecuta si el codigo fuente cambia
+# =============================================================================
 FROM maven:3.9.9-eclipse-temurin-21-alpine AS builder
 
 WORKDIR /build
 
-# 1. Copiar solo los archivos de configuracion de Maven y el POM
-#    (Esto aprovecha la cache de capas de Docker: mientras el POM no cambie,
-#     las dependencias se descargan una sola vez)
+# Copiar SOLO el POM para aprovechar la cache de dependencias
 COPY pom.xml ./
+
+# Descargar todas las dependencias offline (sin compilar aun)
 RUN mvn dependency:go-offline -B
 
-# 2. Copiar el codigo fuente completo
+# Copiar el codigo fuente completo
 COPY src ./src
 
-# 3. Compilar y empaquetar (genera el JAR sin los tests)
+# Compilar y empaquetar en un JAR ejecutable
 RUN mvn clean package -DskipTests -B
 
-# ──────────────────────────────────────────────────────────────────────────────
-# STAGE 2: Build (Prod)  ---> Compila para produccion (sin devtools)
-# ──────────────────────────────────────────────────────────────────────────────
-FROM maven:3.9.9-eclipse-temurin-21-alpine AS builder-prod
 
-WORKDIR /build
-
-# Copiar POM y descargar dependencias
-COPY pom.xml ./
-RUN mvn dependency:go-offline -B
-
-# Copiar codigo fuente
-COPY src ./src
-
-# Compilar con perfil de produccion (excluye devtools)
-RUN mvn clean package -DskipTests -Pprod -B
-
-# ──────────────────────────────────────────────────────────────────────────────
-# STAGE 3: Dev  ---> Desarrollo con Hot Reload (spring-boot-devtools)
-# ──────────────────────────────────────────────────────────────────────────────
-FROM eclipse-temurin:21.0.11_10-jre-jammy AS dev
-
-WORKDIR /opt/app
-
-# Instalar herramientas necesarias para desarrollo
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copiar el JAR desde la etapa builder a /opt/app/
-COPY --from=builder /build/target/*.jar ./app.jar
-
-# Crear directorio /app/src para el bind mount del codigo fuente
-# (DevTools monitorea /app/src para detectar cambios)
-RUN mkdir -p /app/src
-
-EXPOSE 8080 5005 35729
-
-ENTRYPOINT ["java", \
-    "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005", \
-    "-Dspring.devtools.restart.enabled=true", \
-    "-Dspring.devtools.livereload.enabled=true", \
-    "-Dspring.devtools.restart.additional-paths=/app/target/classes", \
-    "-jar", "/opt/app/app.jar"]
-
-# ──────────────────────────────────────────────────────────────────────────────
-# STAGE 4: Prod  ---> Produccion (imagen Alpine JRE ~170MB total)
-# ──────────────────────────────────────────────────────────────────────────────
-FROM eclipse-temurin:21-jre-alpine AS prod
+# =============================================================================
+# STAGE 2: final  ---> Runtime de produccion (unica imagen)
+# =============================================================================
+# Proposito: Imagen unica para desarrollo y produccion.
+#
+# Caracteristicas:
+#   - JRE Alpine: imagen ligera (~170MB)
+#   - Usuario no-root: mejores practicas de seguridad
+#   - Sin DevTools ni JDWP (innecesarios sin bind mounts)
+#   - La conexion a BD se configura por variable de entorno
+# =============================================================================
+FROM eclipse-temurin:21-jre-alpine AS final
 
 WORKDIR /app
 
-# Crear usuario no-root para seguridad
+# Crear usuario y grupo no-root para ejecutar la aplicacion con
+# permisos limitados (seguridad: si el contenedor es comprometido,
+# el atacante no tiene permisos de root)
 RUN addgroup -S spring && adduser -S spring -G spring
 
-# Copiar el JAR (sin devtools) desde la etapa builder-prod
-COPY --from=builder-prod /build/target/*.jar ./app.jar
+# Copiar el JAR desde la etapa builder
+COPY --from=builder /build/target/*.jar ./app.jar
 
-# Asegurar permisos
+# Asignar permisos al usuario spring sobre /app
 RUN chown -R spring:spring /app
 
+# Ejecutar como usuario no-root
 USER spring:spring
 
 EXPOSE 8080

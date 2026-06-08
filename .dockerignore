@@ -1,15 +1,33 @@
 # =============================================================================
 # .dockerignore - ControlStock (raiz del proyecto)
 # =============================================================================
-# Excluye archivos y directorios innecesarios del contexto de build de Docker
-# para evitar invalidacion de cache y envios innecesarios.
+# Este archivo se aplica al contexto de build cuando ejecutamos docker-compose
+# desde la raiz del proyecto (aunque los Dockerfiles estan en subdirectorios).
+#
+# Los archivos/directorios listados aqui NO se envian al demonio de Docker
+# durante el build, lo que:
+#   1. Acelera las transferencias del contexto de build
+#   2. Evita invalidar la cache de capas por cambios en archivos irrelevantes
+#   3. Mejora la seguridad al no exponer documentacion interna
+#
+# NOTA: Los contextos de build especificos (backend/controlstock/, frontend/)
+# tienen sus propios .dockerignore para excluir archivos locales de cada
+# subproyecto (node_modules, target/, dist/, etc.).
+# =============================================================================
 
+# Excluir repositorio Git y archivos relacionados
 .git/
 .gitignore
+
+# Excluir documentacion (no necesaria para el build)
 README.md
 *.md
 docker_docs/
+
+# Excluir node_modules global (por si acaso)
 node_modules/
+
+# Excluir package-lock.json de la raiz (no hay, pero por seguridad)
 package-lock.json
 
 # Los Dockerfiles y contextos especificos estan dentro de backend/ y frontend/

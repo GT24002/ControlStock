@@ -3,11 +3,6 @@
 # =============================================================================
 # Estrategia: Multi-stage Build (Construccion Multietapa)
 #
-# Este Dockerfile produce UNA SOLA imagen final optimizada para produccion.
-# La misma imagen se usa tanto en desarrollo como en produccion; la unica
-# diferencia es la URL de conexion a la base de datos, que se configura
-# mediante variables de entorno en docker-compose.yml.
-#
 # Etapas (stages):
 #   1. builder  → Compila el JAR con Maven
 #   2. final    → Runtime de produccion (Alpine JRE, usuario no-root)

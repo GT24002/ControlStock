@@ -2,12 +2,7 @@
 # Dockerfile: Frontend React + Vite + TypeScript
 # =============================================================================
 # Estrategia: Multi-stage Build (Construccion Multietapa)
-#
-# Este Dockerfile produce UNA SOLA imagen final con Nginx sirviendo los
-# archivos compilados. La misma imagen se usa tanto en desarrollo como
-# en produccion; la unica diferencia es la URL base de la API, que se
-# configura mediante ARG en tiempo de build.
-#
+# 
 # Etapas (stages):
 #   1. deps    → Instala dependencias npm (cache de capas)
 #   2. build   → Compila la aplicacion para produccion (genera dist/)
@@ -50,9 +45,6 @@ RUN npm ci
 # Proposito: Compilar la aplicacion React + TypeScript a archivos estaticos
 # (HTML, JS, CSS) optimizados para produccion. El resultado se guarda
 # en el directorio 'dist/' dentro de la imagen.
-#
-# La URL base de la API se configura mediante ARG para que se pueda
-# cambiar segun el entorno (dev vs prod) en tiempo de build.
 # =============================================================================
 FROM node:current-alpine3.23 AS build
 
@@ -72,13 +64,7 @@ COPY eslint.config.js ./
 COPY public ./public
 COPY src ./src
 
-# ARG para la URL base de la API (se pasa desde docker-compose --build-arg)
-ARG VITE_API_BASE_URL=http://localhost:8081/api
-
-# Establecer como ENV para que Vite lo use en el build
-ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
-
-# Compilar la aplicacion (TypeScript → JavaScript → bundle optimizado)
+# Compilar la aplicacion para produccion (genera dist/)
 RUN npm run build
 
 

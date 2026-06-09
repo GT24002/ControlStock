@@ -1,0 +1,169 @@
+# =============================================================================
+# Docker Compose para ControlStock (dev / prod)
+# =============================================================================
+# Cada perfil agrupa sus servicios bajo un nombre de proyecto distinto
+# mediante el flag -p (project name) de Docker Compose.
+#
+# Comandos de uso:
+#
+# 1. ENTORNO DE DESARROLLO (back+front en Docker, BD externa local):
+#      docker compose -p controlstock-dev --profile dev up --build -d
+#
+# 2. ENTORNO DE PRODUCCION (todo en Docker - perfil "prod"):
+#      docker compose -p controlstock-prod --profile prod up --build -d
+#
+# 3. AMBOS ENTORNOS SIMULTANEAMENTE:
+#      docker compose -p controlstock-dev --profile dev up --build -d
+#      docker compose -p controlstock-prod --profile prod up --build -d
+# =============================================================================
+
+services:
+
+  # ===========================================================================
+  # Perfil: dev - Backend (Spring Boot)
+  # Se conecta a una BD PostgreSQL externa local (host.docker.internal)
+  # ===========================================================================
+  backend-dev:
+    profiles:
+      - dev
+    build:
+      context: ./backend/controlstock
+    image: controlstock-backend:latest
+    container_name: controlstock-backend-dev
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      # Conectarse a PostgreSQL externo local (no dockerizado)
+      SPRING_DATASOURCE_URL: jdbc:postgresql://host.docker.internal:5432/controlstockdb
+      SPRING_DATASOURCE_USERNAME: admin
+      SPRING_DATASOURCE_PASSWORD: admin123
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+    labels:
+      - "com.docker.compose.project=controlstock-dev"
+      - "environment=development"
+    networks:
+      controlstock-net-dev:
+        aliases:
+          - backend
+
+  # ===========================================================================
+  # Perfil: dev - Frontend (React + Nginx)
+  # ===========================================================================
+  frontend-dev:
+    profiles:
+      - dev
+    build:
+      context: ./frontend
+    image: controlstock-frontend:latest
+    container_name: controlstock-frontend-dev
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+    labels:
+      - "com.docker.compose.project=controlstock-dev"
+      - "environment=development"
+    depends_on:
+      - backend-dev
+    networks:
+      - controlstock-net-dev
+
+  # ===========================================================================
+  # Perfil: prod - Base de Datos de Produccion
+  # ===========================================================================
+  db-prod:
+    profiles:
+      - prod
+    image: postgres:16.13-alpine3.23
+    container_name: controlstock-db-prod
+    restart: always
+    environment:
+      POSTGRES_DB: controlstockdb
+      POSTGRES_USER: admin_prod
+      POSTGRES_PASSWORD: admin_production_password
+    ports:
+      - "5434:5432"
+    volumes:
+      - pgdata_prod:/var/lib/postgresql/data
+      - ./database:/docker-entrypoint-initdb.d:ro
+    labels:
+      - "com.docker.compose.project=controlstock-prod"
+      - "environment=production"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin_prod -d controlstock"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - controlstock-net-prod
+
+  # ===========================================================================
+  # Perfil: prod - Backend 
+  # ===========================================================================
+  backend-prod:
+    profiles:
+      - prod
+    build:
+      context: ./backend/controlstock
+    image: controlstock-backend:latest
+    container_name: controlstock-backend-prod
+    restart: always
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db-prod:5432/controlstockdb
+      SPRING_DATASOURCE_USERNAME: admin_prod
+      SPRING_DATASOURCE_PASSWORD: admin_production_password
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+    expose:
+      - "8080"
+    ports:
+      - "8081:8080"
+    labels:
+      - "com.docker.compose.project=controlstock-prod"
+      - "environment=production"
+    depends_on:
+      db-prod:
+        condition: service_healthy
+    networks:
+      controlstock-net-prod:
+        aliases:
+          - backend
+
+  # ===========================================================================
+  # Perfil: prod - Frontend (React + Nginx)
+  # ===========================================================================
+  frontend-prod:
+    profiles:
+      - prod
+    build:
+      context: ./frontend
+    image: controlstock-frontend:latest
+    container_name: controlstock-frontend-prod
+    restart: always
+    ports:
+      - "80:80"
+    labels:
+      - "com.docker.compose.project=controlstock-prod"
+      - "environment=production"
+    depends_on:
+      - backend-prod
+    networks:
+      - controlstock-net-prod
+
+# =============================================================================
+# Redes
+# =============================================================================
+networks:
+  controlstock-net-dev:
+    name: controlstock_network_dev
+    driver: bridge
+  controlstock-net-prod:
+    name: controlstock_network_prod
+    driver: bridge
+
+# =============================================================================
+# Volumenes
+# =============================================================================
+volumes:
+  pgdata_prod:
+    name: controlstock_pgdata_prod

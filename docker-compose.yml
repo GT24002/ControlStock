@@ -110,7 +110,7 @@ services:
     container_name: controlstock-backend-prod
     restart: always
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db-prod:5432/controlstock
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db-prod:5432/controlstockdb
       SPRING_DATASOURCE_USERNAME: admin_prod
       SPRING_DATASOURCE_PASSWORD: admin_production_password
       SPRING_JPA_HIBERNATE_DDL_AUTO: update

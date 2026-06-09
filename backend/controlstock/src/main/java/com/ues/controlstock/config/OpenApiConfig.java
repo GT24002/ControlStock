@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Configuration;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
 
+// Configuración de Swagger — documenta todos los endpoints de la API
 @Configuration
 public class OpenApiConfig {
     @Bean
@@ -14,8 +15,7 @@ public class OpenApiConfig {
                 .info(new Info()
                         .title("Control de Stock API")
                         .version("1.0")
-                        .description("API para gestión de roles")
+                        .description("API REST para el sistema de gestión de inventario ControlStock")
                 );
     }
- 
 }

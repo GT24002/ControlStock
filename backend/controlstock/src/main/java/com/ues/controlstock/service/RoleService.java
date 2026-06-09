@@ -10,78 +10,69 @@ import com.ues.controlstock.dto.RoleDTO;
 import com.ues.controlstock.entity.Role;
 import com.ues.controlstock.repository.RoleRepository;
 
-
+// Lógica de negocio para la gestión de roles
 @Service
 public class RoleService {
+
     private final RoleRepository roleRepository;
 
-    public RoleService(RoleRepository roleRepository){
+    public RoleService(RoleRepository roleRepository) {
         this.roleRepository = roleRepository;
     }
-    
-    
 
-    // Crea
-    public RoleDTO save(RoleDTO dto){
+    // Crea un nuevo rol
+    public RoleDTO save(RoleDTO dto) {
         Role role = new Role();
         role.setRoleName(dto.getRoleName());
         role.setDescription(dto.getDescription());
 
         Role savedRole = roleRepository.save(role);
-        dto.setId(savedRole.getId());
+        dto.setRoleId(savedRole.getRoleId());
 
         return dto;
     }
 
-
-    // Obtener especifico
-    public Optional<RoleDTO> get(Long id){
+    // Retorna un rol específico por su ID
+    public Optional<RoleDTO> get(Long id) {
         return roleRepository.findById(id)
             .map(role -> new RoleDTO(
-                role.getId(),
+                role.getRoleId(),
                 role.getRoleName(),
                 role.getDescription()
-            )
-        );
+            ));
     }
 
-
-    // Obtener todos
-    public List<RoleDTO> findAll(){
+    // Retorna todos los roles registrados
+    public List<RoleDTO> findAll() {
         return roleRepository.findAll()
-            .stream().map(this::convertToDTO)
+            .stream()
+            .map(this::convertToDTO)
             .collect(Collectors.toList());
     }
 
-
-    // Actualizar
-    public RoleDTO update(Long id, RoleDTO updatedData){
+    // Actualiza un rol existente
+    public RoleDTO update(Long id, RoleDTO updatedData) {
         Role role = roleRepository.findById(id).orElseThrow();
-
         role.setRoleName(updatedData.getRoleName());
         role.setDescription(updatedData.getDescription());
-     
         return convertToDTO(roleRepository.save(role));
     }
 
-
-    // Borrar
-    public boolean delete(Long id){
-        if (roleRepository.existsById(id)){
+    // Elimina un rol por su ID — retorna true si fue eliminado
+    public boolean delete(Long id) {
+        if (roleRepository.existsById(id)) {
             roleRepository.deleteById(id);
             return true;
         }
         return false;
     }
 
-
-    // Método auxiliar para convertir roles a dtos
-    private RoleDTO convertToDTO(Role role){
-        RoleDTO dto = new RoleDTO(
-            role.getId(),
+    // Convierte la entidad Role a DTO
+    private RoleDTO convertToDTO(Role role) {
+        return new RoleDTO(
+            role.getRoleId(),
             role.getRoleName(),
             role.getDescription()
         );
-        return dto;
     }
 }

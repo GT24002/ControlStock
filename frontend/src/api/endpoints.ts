@@ -52,6 +52,7 @@ export const inventoryApi = {
   getByWarehouse: (id: number) => api.get<Inventory[]>(`/api/inventory/warehouse/${id}`).then(r => r.data),
   create: (data: Partial<Inventory>) => api.post<Inventory>('/api/inventory', data).then(r => r.data),
   update: (id: number, data: Partial<Inventory>) => api.put<Inventory>(`/api/inventory/${id}`, data).then(r => r.data),
+  delete: (id: number) => api.delete(`/api/inventory/${id}`),
 };
 
 // Endpoints de movimientos — solo lectura y registro, sin edición ni eliminación
